@@ -1,0 +1,38 @@
+.container-login {
+    background-color: #fff;
+    border-color: #000;
+    border-radius: 10px;
+    padding: 20px;
+    width: 400px;
+    height: 500px;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+}
+
+.w-20 {
+    width: 40%;
+    height: 30%;
+}
+
+.text-lg {
+    margin-top: 15px;
+}
+
+
+.login-page {
+    @apply bg-gray-100;
+    /* Estilo de fondo específico para la página de login */
+}
+
+.login-page .clip-curve {
+    clip-path: ellipse(120% 100% at 0% 50%);
+    @apply bg-indigo-800 opacity-75;
+}
+
+.bg-custom {
+    background-image: url('https://i0.wp.com/wokii.com/wp-content/uploads/2021/08/olimpiada-del-conocimiento-5-scaled.jpg?fit=2560%2C1707&ssl=1');
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    background-blend-mode: overlay;
+  }
+  

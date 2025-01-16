@@ -1,0 +1,8 @@
+.container {
+    margin-top: 50px;
+}
+
+.container-buttons {
+    justify-content: flex-end;
+    align-items: flex-end;
+}
