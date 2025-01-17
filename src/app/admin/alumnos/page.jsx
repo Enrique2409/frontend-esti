@@ -40,6 +40,13 @@ export default function PageListStudents() {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <h1 className="text-2xl font-semibold text-gray-900">Alumnos</h1>
                 <div className="mt-4">
+                    <div className="flex-1 max-w-xs">
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
+                            className="block w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
                     <div className="flex justify-end">
                         <button
                             onClick={() => handleOpenModal()}
