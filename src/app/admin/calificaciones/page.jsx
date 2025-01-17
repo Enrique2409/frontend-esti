@@ -59,7 +59,7 @@ export default function PageCalificaciones() {
                                         <th className="px-4 py-2">Apellido</th>
                                         <th className="px-4 py-2">Grado</th>
                                         <th className="px-4 py-2">Grupo</th>
-                                        <th className="px-4 py-2">Materia</th>
+                                        <th className="px-4 py-2">Disciplina</th>
                                         <th className="px-4 py-2">Calificación</th>
                                         <th className="px-4 py-2">Observaciones</th>
                                         <th className="px-4 py-2">Acciones</th>
