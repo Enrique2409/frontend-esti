@@ -19,3 +19,48 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media print {
+    .print\:hidden {
+        display: none !important;
+    }
+    
+    body {
+        padding: 20px;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .container {
+        max-width: none !important;
+        padding: 0 !important;
+    }
+    
+    @page {
+        size: landscape;
+        margin: 1.5cm;
+    }
+
+    table {
+        font-size: 11pt;
+    }
+
+    /* Ajustes para mejor visualización en horizontal */
+    .bg-white.border.border-gray-200 {
+        margin: 0;
+        padding: 15px !important;
+    }
+
+    /* Ajustar tamaños de texto para modo horizontal */
+    h1 {
+        font-size: 20pt !important;
+    }
+
+    p {
+        font-size: 10pt !important;
+    }
+
+    th, td {
+        padding: 8px !important;
+    }
+}
