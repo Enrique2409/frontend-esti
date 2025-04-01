@@ -1,14 +1,60 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import "../app/Styles/Login.css";
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setTimeout(() => setIsLoading(false), 1500);
+    setError("");
+    if (email === "" || password === "") {
+      setError("Por favor, completa todos los campos.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/esti/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const { token, role } = data;
+        localStorage.setItem("token", token);
+        console.log("Token de autenticación para iniciar seison:", token);
+
+        if (role === "ADMIN") {
+          router.push("/admin");
+        } else if (role === "TEACHER") {
+          router.push("/profesor");
+        } else {
+          setError("Rol no reconocido.");
+          setIsLoading(false);
+        }
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || "Error al iniciar sesión.");
+        setIsLoading(false);
+      }
+    } catch (error) {
+      setError("Error, corrreo o contraseña incorrectos.");
+      setIsLoading(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -54,6 +100,8 @@ export default function Login() {
                       required
                       className="block w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
                       placeholder="ejemplo@escuela.edu.mx"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                     />
                     <div className="absolute right-3 top-3 text-gray-400">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,6 +121,8 @@ export default function Login() {
                       required
                       className="block w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200"
                       placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                     />
                     <div className="absolute right-3 top-3 text-gray-400">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +150,11 @@ export default function Login() {
                   ¿Olvidaste tu contraseña?
                 </a>
               </div>
-
+              {error && (
+                <div className="mt-4 text-red-600 text-sm text-center">
+                  {error}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={isLoading}
