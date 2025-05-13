@@ -33,12 +33,12 @@ export default function PageProfessors() {
     useEffect(() => {
         const fetchGroups = async () => {
             try {
-               await getAllGroups(setGroups);
+                await getAllGroups(setGroups);
             } catch (error) {
                 console.error("Error al obtener grupos:", error);
             }
         };
-    
+
         const fetchLevels = async () => {
             try {
                 await getAllLevels(setLevels);
@@ -46,12 +46,33 @@ export default function PageProfessors() {
                 console.error("Error al obtener niveles:", error);
             }
         };
-    
+
         fetchGroups();
         fetchLevels();
         checkAuthentication();
     }, []);
-    
+
+    const validateForm = () => {
+        const { name, lastName, phoneNumber, email, password, level, group } = formData;
+        if (!name || !lastName || !phoneNumber || !email || !password || !level || !group) {
+            Swal.fire("Error", "Todos los campos son obligatorios", "error");
+            return false;
+        }
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+        if (!emailPattern.test(email)) {
+            Swal.fire("Error", "El correo electrónico no es válido", "error");
+            return false;
+        }
+
+        const phonePattern = /^[0-9]{10}$/;
+        if (!phonePattern.test(phoneNumber)) {
+            Swal.fire("Error", "El número de teléfono no es válido", "error");
+            return false;
+        }
+
+        return true;
+    };
+
 
     const checkAuthentication = () => {
         const token = localStorage.getItem("token");
@@ -111,15 +132,16 @@ export default function PageProfessors() {
             [name]: value
         }));
     };
-    
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
         try {
             const payload = {
                 ...formData,
                 level: formData.level ? { idLevel: formData.level } : null,
-                group: formData.group?.groupName 
+                group: formData.group?.groupName
             };
             if (formData.idTeacher) {
                 await updateTeacher(payload);
@@ -356,12 +378,12 @@ export default function PageProfessors() {
                             onChange={handleChange}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         >
-                        <option value="">Seleccionar grado</option>
-                        {levels.map((level) => (
-                            <option key={level.idLevel} value={level.idLevel}>
-                                {level.level}
-                            </option>
-                        ))}
+                            <option value="">Seleccionar grado</option>
+                            {levels.map((level) => (
+                                <option key={level.idLevel} value={level.idLevel}>
+                                    {level.level}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div>
@@ -373,7 +395,7 @@ export default function PageProfessors() {
                             onChange={handleChange}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         >
-                            <option value ="">Seleccionar grupo</option>
+                            <option value="">Seleccionar grupo</option>
                             {groups.map((group, index) => (
                                 <option key={group.idGroup ?? index} value={group.idGroup}>
                                     {group.groupName}
