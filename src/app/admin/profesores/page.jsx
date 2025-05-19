@@ -210,7 +210,7 @@ export default function PageProfessors() {
     return (
         <div className="min-h-screen bg-white">
             <Navbar />
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
                 <TableHeader
                     title="Profesores"
                     onAdd={() => handleOpenModal()}

@@ -1,84 +1,63 @@
 import axios from "axios";
 
 const baseURL = "http://localhost:8080/esti";
-const adminURL = `${baseURL}/admin`;
+const studentURL = `${baseURL}/student`;
 
 const getAuthToken = () => localStorage.getItem("token");
-console.log("Token de autenticación:", getAuthToken());
 
-export const login = async (credentials) => {
-    try {
-        const response = await axios.post(`${baseURL}/auth/login`, credentials);
-        const { token } = response.data;
-        localStorage.setItem("token", token);
-        return token;
-    } catch (error) {
-        console.error("Error en el login:", error);
-        throw error;
-    }
-};
-
-
-export const getAllAdmin = async (setAdmins) => {
+export const getAllStudents = async (setStudents) => {
     try {
         const token = getAuthToken();
         if (!token) {
             console.log("No hay token de autenticación");
-            setAdmins([]);
+            setStudents([]);
             return;
         }
 
-        const response = await axios.get(`${adminURL}/getAll`, {
+        const response = await axios.get(`${studentURL}/all`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
-        setAdmins(response.data);
+        setStudents(response.data);
     } catch (error) {
-        console.error("Error al obtener administradores:", error);
-        setAdmins([]);
+        console.error("Error al obtener estudiantes:", error);
+        setStudents([]);
     }
 };
 
-export const addAdmin = async (admin) => {
+export const createStudent = async (student) => {
     try {
-        const response = await axios.post(`${adminURL}/`, admin, {
+
+    } catch (error) {
+        console.error("Error al crear estudiante:", error);
+    }
+};
+
+export const updateStudent = async (student) => {
+    try {
+
+    } catch (error) {
+        console.error("Error al actualizar estudiante:", error);
+    }
+};
+
+export const deleteStudent = async (idStudent) => {
+    try {
+
+    } catch (error) {
+        console.error("Error al eliminar estudiante permanentemente:", error);
+    }
+};
+
+export const getStudentById = async (idStudent, setStudent) => {
+    try {
+        const response = await axios.get(`${studentURL}/${idStudent}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
-                "Content-Type": "application/json"
+                "Authorization": `Bearer ${getAuthToken()}`
             }
         });
-        console.log("Administrador agregado:", response.data);
+        setStudent(response.data);
     } catch (error) {
-        console.error("Error al agregar administrador:", error);
+        console.error("Error al obtener estudiante por ID:", error);
+        setStudent(null);
     }
 };
-
-export const updateAdmin = async (admin) => {
-    try {
-        const response = await axios.patch(`${adminURL}/${admin.idAdmin}`, admin, {
-            headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
-                "Content-Type": "application/json"
-            }
-        });
-        console.log("Administrador actualizado:", response.data);
-    } catch (error) {
-        console.error("Error al actualizar administrador:", error);
-    }
-};
-
-export const deleteAdmin = async (idAdmin) => {
-    console.log("adminId:", idAdmin);
-
-    try {
-        const response = await axios.delete(`${adminURL}/${idAdmin}`, {
-            headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
-                "Content-Type": "application/json"
-            }
-        });
-        console.log("Administrador eliminado:", response.data);
-    } catch (error) {
-        console.error("Error al eliminar administrador:", error);
-    }
-};
-

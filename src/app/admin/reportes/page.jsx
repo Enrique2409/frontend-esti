@@ -37,7 +37,7 @@ export default function PageReportes() {
             <div className="print:hidden">
                 <Navbar />
             </div>
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
                 <div className="print:hidden">
                     <TableHeader 
                         title="Reportes y Boletas" 
