@@ -13,7 +13,7 @@ export default function PageAdministrators() {
     const [administrators, setAdministrators] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [isAuth, setIsAuth] = useState(false);   // Se basará solo en la existencia del token
+    const [isAuth, setIsAuth] = useState(false);
     const [formData, setFormData] = useState({
         idAdmin: "",
         name: "",
@@ -50,7 +50,7 @@ export default function PageAdministrators() {
                 lastName: administrator.lastName,
                 phoneNumber: administrator.phoneNumber,
                 email: administrator.email,
-                password: administrator.password,
+                password: "", // Dejar vacío al editar para no mostrar contraseña actual
                 role: administrator.role,
             });
         } else {
@@ -66,6 +66,7 @@ export default function PageAdministrators() {
 
     const resetForm = () => {
         setFormData({
+            idAdmin: "",
             name: "",
             lastName: "",
             phoneNumber: "",
@@ -85,11 +86,19 @@ export default function PageAdministrators() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const dataToSend = { ...formData };
+
             if (formData.idAdmin) {
-                await updateAdmin(formData);
+                // Al editar, si password está vacío no lo enviamos para no modificarlo
+                if (!formData.password.trim()) {
+                    delete dataToSend.password;
+                }
+                await updateAdmin(dataToSend);
             } else {
-                await addAdmin(formData);
+                // Al crear, sí debe venir la contraseña (por eso required en input)
+                await addAdmin(dataToSend);
             }
+
             await fetchAdministrators();
             handleCloseModal();
             Swal.fire('Éxito', 'Administrador guardado correctamente', 'success');
@@ -222,7 +231,6 @@ export default function PageAdministrators() {
                 </div>
             </main>
 
-
             <Modal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
@@ -286,7 +294,9 @@ export default function PageAdministrators() {
                         />
                     </div>
                     <div>
-                        <label htmlFor="password" className="password block text-sm font-medium text-gray-700">Contraseña</label>
+                        <label htmlFor="password" className="password block text-sm font-medium text-gray-700">
+                            Contraseña {formData.idAdmin ? "(opcional al editar)" : ""}
+                        </label>
                         <input
                             type="password"
                             name="password"
@@ -294,7 +304,7 @@ export default function PageAdministrators() {
                             value={formData.password}
                             onChange={handleChange}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            required
+                            required={!formData.idAdmin} // Requerido solo al crear
                             style={{
                                 appearance: "none",
                                 border: "1px solid #ccc",
@@ -305,19 +315,7 @@ export default function PageAdministrators() {
                             }}
                         />
                     </div>
-                    <div>
-                        <label htmlFor="role" className="block text-sm font-medium text-gray-700">Rol</label>
-                        <select
-                            name="role"
-                            id="role"
-                            value={formData.role}
-                            onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                            <option value="ADMIN">Administrador</option>
-                            <option value="TEACHER">Profesor</option>
-                        </select>
-                    </div>
+
                     <div className="flex justify-end space-x-3">
                         <button
                             type="button"
@@ -330,12 +328,11 @@ export default function PageAdministrators() {
                             type="submit"
                             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
-                            {formData.idAdmin ? "Actualizar" : "Crear"}
+                            Guardar
                         </button>
                     </div>
                 </form>
             </Modal>
-
         </div>
     );
 }

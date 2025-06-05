@@ -6,18 +6,13 @@ import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
 import Swal from 'sweetalert2';
 import { getAllTeachersAsAdmin, addTeacher, updateTeacher, deleteTeacher } from "@/app/Service/TeacherService";
-import { getAllLevels } from "@/app/Service/LevelService";
-import { getAllGroups } from "@/app/Service/GroupService";
 import "../../Styles/professors.css";
-
 
 export default function PageProfessors() {
     const [teachers, setTeachers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [isAuth, setIsAuth] = useState(false);
-    const [groups, setGroups] = useState([]);
-    const [levels, setLevels] = useState([]);
     const [formData, setFormData] = useState({
         idTeacher: "",
         name: "",
@@ -25,39 +20,26 @@ export default function PageProfessors() {
         phoneNumber: "",
         email: "",
         password: "",
-        level: "",
-        group: "",
         role: "TEACHER"
     });
 
     useEffect(() => {
-        const fetchGroups = async () => {
-            try {
-                await getAllGroups(setGroups);
-            } catch (error) {
-                console.error("Error al obtener grupos:", error);
-            }
-        };
-
-        const fetchLevels = async () => {
-            try {
-                await getAllLevels(setLevels);
-            } catch (error) {
-                console.error("Error al obtener niveles:", error);
-            }
-        };
-
-        fetchGroups();
-        fetchLevels();
         checkAuthentication();
     }, []);
 
     const validateForm = () => {
-        const { name, lastName, phoneNumber, email, password, level, group } = formData;
-        if (!name || !lastName || !phoneNumber || !email || !password || !level || !group) {
-            Swal.fire("Error", "Todos los campos son obligatorios", "error");
+        const { name, lastName, phoneNumber, email, password, idTeacher } = formData;
+
+        if (!name || !lastName || !phoneNumber || !email) {
+            Swal.fire("Error", "Los campos Nombre, Apellido, Teléfono y Correo electrónico son obligatorios", "error");
             return false;
         }
+
+        if (!idTeacher && !password) {
+            Swal.fire("Error", "La contraseña es obligatoria al crear un profesor", "error");
+            return false;
+        }
+
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
         if (!emailPattern.test(email)) {
             Swal.fire("Error", "El correo electrónico no es válido", "error");
@@ -72,7 +54,6 @@ export default function PageProfessors() {
 
         return true;
     };
-
 
     const checkAuthentication = () => {
         const token = localStorage.getItem("token");
@@ -96,10 +77,8 @@ export default function PageProfessors() {
                 lastName: teacher.lastName,
                 phoneNumber: teacher.phoneNumber,
                 email: teacher.email,
-                password: teacher.password,
-                level: teacher.level?.idLevel || "",
-                group: teacher.group?.idGroup ?? "",
-                role: teacher.role
+                password: "",
+                role: teacher.role,
             });
         } else {
             resetForm();
@@ -114,13 +93,12 @@ export default function PageProfessors() {
 
     const resetForm = () => {
         setFormData({
+            idTeacher: "",
             name: "",
             lastName: "",
             phoneNumber: "",
             email: "",
             password: "",
-            level: "",
-            group: "",
             role: "TEACHER"
         });
     };
@@ -133,16 +111,27 @@ export default function PageProfessors() {
         }));
     };
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) return;
+
         try {
             const payload = {
-                ...formData,
-                level: formData.level ? { idLevel: formData.level } : null,
-                group: formData.group?.groupName
+                idTeacher: formData.idTeacher || undefined,
+                name: formData.name,
+                lastName: formData.lastName,
+                phoneNumber: formData.phoneNumber,
+                email: formData.email,
+                role: formData.role
             };
+
+            if (!formData.idTeacher) {
+                payload.password = formData.password;
+            }
+            else if (formData.password) {
+                payload.password = formData.password;
+            }
+
             if (formData.idTeacher) {
                 await updateTeacher(payload);
                 Swal.fire("Profesor actualizado con éxito", "", "success");
@@ -150,6 +139,7 @@ export default function PageProfessors() {
                 await addTeacher(payload);
                 Swal.fire("Profesor agregado con éxito", "", "success");
             }
+
             await fetchTeachers();
             handleCloseModal();
         } catch (error) {
@@ -225,7 +215,7 @@ export default function PageProfessors() {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        {["ID", "Nombre", "Apellido", "Correo electrónico", "Teléfono", "Grado", "Grupo", "Acciones"].map((header) => (
+                                        {["ID", "Nombre", "Apellido", "Correo electrónico", "Teléfono", "Acciones"].map((header) => (
                                             <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 {header}
                                             </th>
@@ -249,12 +239,6 @@ export default function PageProfessors() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {teacher.phoneNumber}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {teacher.level?.level ?? ""}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {teacher.group?.groupName}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 <div className="flex space-x-2">
@@ -350,7 +334,9 @@ export default function PageProfessors() {
                         />
                     </div>
                     <div>
-                        <label htmlFor="password" className="password block text-sm font-medium text-gray-700">Contraseña</label>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            Contraseña {formData.idTeacher ? "(opcional al editar)" : ""}
+                        </label>
                         <input
                             type="password"
                             name="password"
@@ -358,7 +344,7 @@ export default function PageProfessors() {
                             value={formData.password}
                             onChange={handleChange}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            required
+                            required={!formData.idTeacher}
                             style={{
                                 appearance: "none",
                                 border: "1px solid #ccc",
@@ -369,53 +355,9 @@ export default function PageProfessors() {
                             }}
                         />
                     </div>
-                    <div>
-                        <label htmlFor="level" className="block text-sm font-medium text-gray-700">Grado</label>
-                        <select
-                            name="level"
-                            id="level"
-                            value={formData.level}
-                            onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                            <option value="">Seleccionar grado</option>
-                            {levels.map((level) => (
-                                <option key={level.idLevel} value={level.idLevel}>
-                                    {level.level}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label htmlFor="group" className="block text-sm font-medium text-gray-700">Grupo</label>
-                        <select
-                            name="group"
-                            id="group"
-                            value={formData.group}
-                            onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                            <option value="">Seleccionar grupo</option>
-                            {groups.map((group, index) => (
-                                <option key={group.idGroup ?? index} value={group.idGroup}>
-                                    {group.groupName}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label htmlFor="role" className="block text-sm font-medium text-gray-700">Rol</label>
-                        <select
-                            name="role"
-                            id="role"
-                            value={formData.role}
-                            onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                            <option value="ADMIN">Administrador</option>
-                            <option value="TEACHER">Profesor</option>
-                        </select>
-                    </div>
+
+                    <input type="hidden" name="role" value="TEACHER" />
+
                     <div className="flex justify-end space-x-3">
                         <button
                             type="button"
@@ -428,7 +370,7 @@ export default function PageProfessors() {
                             type="submit"
                             className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
-                            {formData.idAdmin ? "Actualizar" : "Crear"}
+                            {formData.idTeacher ? "Actualizar" : "Crear"}
                         </button>
                     </div>
                 </form>

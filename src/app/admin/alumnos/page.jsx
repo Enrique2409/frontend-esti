@@ -5,13 +5,13 @@ import { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
-import "../../Styles/admin.css"; // misma hoja de estilo
-import Swal from 'sweetalert2';
+import "../../Styles/admin.css";
+import Swal from "sweetalert2";
 import {
   getAllStudents,
-  addStudent,
+  createStudent,
   updateStudent,
-  deleteStudent
+  deleteStudent,
 } from "@/app/Service/StudentService";
 
 export default function PageStudents() {
@@ -52,6 +52,7 @@ export default function PageStudents() {
 
   const resetForm = () => {
     setFormData({
+      idStudent: "",
       name: "",
       lastNamePaternal: "",
       lastNameMaternal: "",
@@ -70,11 +71,15 @@ export default function PageStudents() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const formToSend = { ...formData };
+    if (!formToSend.idStudent) delete formToSend.idStudent;
+
     try {
       if (formData.idStudent) {
-        await updateStudent(formData);
+        await updateStudent(formToSend);
       } else {
-        await addStudent(formData);
+        await createStudent(formToSend);
       }
       await fetchStudents();
       handleCloseModal();
@@ -110,14 +115,20 @@ export default function PageStudents() {
   };
 
   const filteredStudents = students.filter((student) =>
-    `${student.name} ${student.lastNamePaternal} ${student.lastNameMaternal}`.toLowerCase().includes(searchTerm.toLowerCase())
+    `${student.name} ${student.lastNamePaternal} ${student.lastNameMaternal}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
-        <TableHeader title="Estudiantes" onAdd={() => handleOpenModal()} buttonLabel="Nuevo Estudiante" />
+        <TableHeader
+          title="Estudiantes"
+          onAdd={() => handleOpenModal()}
+          buttonLabel="Nuevo Estudiante"
+        />
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="p-6">
             <SearchBar onSearch={setSearchTerm} />
@@ -125,8 +136,20 @@ export default function PageStudents() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["ID", "Nombre", "Apellido Paterno", "Apellido Materno", "CURP", "Nacimiento", "Teléfono", "Acciones"].map((header) => (
-                      <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {[
+                      "ID",
+                      "Nombre",
+                      "Apellido Paterno",
+                      "Apellido Materno",
+                      "CURP",
+                      "Nacimiento",
+                      "Teléfono",
+                      "Acciones",
+                    ].map((header) => (
+                      <th
+                        key={header}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
                         {header}
                       </th>
                     ))}
@@ -134,14 +157,31 @@ export default function PageStudents() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredStudents.map((student) => (
-                    <tr key={student.idStudent} className="hover:bg-gray-50 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.idStudent}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.lastNamePaternal}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.lastNameMaternal}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.curp}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.birthDate}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.phoneNumber}</td>
+                    <tr
+                      key={student.idStudent}
+                      className="hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {student.idStudent}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {student.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {student.lastNamePaternal}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {student.lastNameMaternal}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {student.curp}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {student.birthDate}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {student.phoneNumber}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <button
@@ -151,7 +191,9 @@ export default function PageStudents() {
                             Editar
                           </button>
                           <button
-                            onClick={() => handleDeleteStudent(student.idStudent)}
+                            onClick={() =>
+                              handleDeleteStudent(student.idStudent)
+                            }
                             className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium transition-colors duration-200"
                           >
                             Eliminar
@@ -173,17 +215,26 @@ export default function PageStudents() {
         title={formData.idStudent ? "Editar estudiante" : "Nuevo estudiante"}
       >
         <form onSubmit={handleSubmit} className="space-y-6">
-          {["name", "lastNamePaternal", "lastNameMaternal", "curp", "birthDate", "phoneNumber"].map((field) => (
-            <div key={field}>
-              <label htmlFor={field} className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
+          {[
+            { label: "Nombre", name: "name", type: "text" },
+            { label: "Apellido paterno", name: "lastNamePaternal", type: "text" },
+            { label: "Apellido materno", name: "lastNameMaternal", type: "text" },
+            { label: "CURP", name: "curp", type: "text" },
+            { label: "Fecha de nacimiento", name: "birthDate", type: "date" },
+            { label: "Teléfono", name: "phoneNumber", type: "text" },
+          ].map(({ label, name, type }) => (
+            <div key={name}>
+              <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+                {label}
+              </label>
               <input
-                type={field === "birthDate" ? "date" : "text"}
-                name={field}
-                id={field}
-                value={formData[field]}
+                type={type}
+                name={name}
+                id={name}
+                value={formData[name]}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               />
             </div>
           ))}

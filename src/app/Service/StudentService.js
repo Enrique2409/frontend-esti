@@ -14,7 +14,7 @@ export const getAllStudents = async (setStudents) => {
             return;
         }
 
-        const response = await axios.get(`${studentURL}/all`, {
+        const response = await axios.get(`${studentURL}/active`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
         setStudents(response.data);
@@ -26,25 +26,47 @@ export const getAllStudents = async (setStudents) => {
 
 export const createStudent = async (student) => {
     try {
-
+        const response = await axios.post(`${studentURL}/create-student`, student, {
+            headers: {
+                "Authorization": `Bearer ${getAuthToken()}`,
+                "Content-Type": "application/json"
+            }
+        });
+        console.log("Estudiante creado exitosamente:", response.data);
+        return response.data;
     } catch (error) {
-        console.error("Error al crear estudiante:", error);
+        console.error("Error al crear estudiante:", error.response?.data || error.message);
+        throw error;
     }
 };
 
 export const updateStudent = async (student) => {
     try {
-
+        const response = await axios.patch(`${studentURL}/${student.idStudent}`, student, { 
+            headers: {
+                "Authorization": `Bearer ${getAuthToken()}`,
+                "Content-Type": "application/json"
+            }
+        });
+        console.log("Estudiante actualizado exitosamente:", response.data);
+        return response.data;
     } catch (error) {
-        console.error("Error al actualizar estudiante:", error);
+        console.error("Error al actualizar estudiante:", error.response?.data || error.message);
+        throw error;
     }
 };
 
 export const deleteStudent = async (idStudent) => {
     try {
-
+        const response = await axios.delete(`${studentURL}/${idStudent}`, {
+            headers: {
+                "Authorization": `Bearer ${getAuthToken()}`,
+                "Content-Type": "application/json"
+            }
+        });
+        console.log("Estudiante eliminado lógicamente:", response.status);
     } catch (error) {
-        console.error("Error al eliminar estudiante permanentemente:", error);
+        console.error("Error al eliminar estudiante lógicamente:", error);
     }
 };
 
