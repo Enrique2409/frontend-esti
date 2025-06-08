@@ -8,3 +8,10 @@ nav {
 .text-gray-900 {
     font-size: large;
 }
+
+.relative {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    position:unset;
+}

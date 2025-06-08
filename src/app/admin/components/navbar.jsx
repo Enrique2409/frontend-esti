@@ -1,144 +1,120 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
 import "../../Styles/navbar.css";
 
 const Navbar = () => {
   const pathname = usePathname();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const router = useRouter();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   const isActive = (path) => pathname === path;
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === "dark");
-    }
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
-  useEffect(() => {
-    if (isDarkMode) {
-      document.body.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.body.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDarkMode]);
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/");
+  };
+
+  const menuItems = [
+    { path: "/admin/inicio", label: "Inicio", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
+    { path: "/admin/administradores", label: "Administradores", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" },
+    { path: "/admin/profesores", label: "Profesores", icon: "M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" },
+    { path: "/admin/alumnos", label: "Alumnos", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" },
+    { path: "/admin/calificaciones", label: "Calificaciones", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
+    { path: "/admin/reportes", label: "Reportes", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
+  ];
 
   return (
-    <nav className="bg-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative flex items-center justify-between h-16">
-          {/* Botón con interruptor para el tema */}
-          <label htmlFor="theme-toggle" className="inline-flex items-center cursor-pointer">
-            <span className="mr-2">🌞</span>
-            <div className="relative">
-              <input
-                type="checkbox"
-                id="theme-toggle"
-                className="hidden"
-                checked={isDarkMode}
-                onChange={toggleTheme}
-              />
-              <div className="toggle-path bg-gray-300 w-12 h-6 rounded-full"></div>
-              <div className={`toggle-circle w-6 h-6 rounded-full bg-white absolute top-0.5 left-0.5 transition-all ${isDarkMode ? "transform translate-x-6" : ""}`}></div>
-            </div>
-            <span className="ml-2">🌑</span>
-          </label>
-
-          {/* Menú para dispositivos móviles */}
-          <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
-            <button
-              type="button"
-              className="inline-flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-              aria-controls="mobile-menu"
-              aria-expanded="false"
-            >
-              <span className="sr-only">Abrir menú principal</span>
-              <svg
-                className="block h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Logo de la barra de navegación */}
-          <div className="flex items-center">
-            <img
-              className="h-12 w-auto"
-              src="/logo.png"
-              alt="Logo"
-            />
-            <span className="ml-2 text-xl font-bold text-gray-900">E.S.T.I N° 70</span>
-          </div>
-
-          {/* Enlaces del menú para pantallas grandes */}
-          <div className="hidden sm:block sm:ml-6">
-            <div className="flex space-x-4">
-              {[
-                { path: "/admin/inicio", label: "Inicio" },
-                { path: "/admin/administradores", label: "Administradores" },
-                { path: "/admin/profesores", label: "Profesores" },
-                { path: "/admin/alumnos", label: "Alumnos" },
-                { path: "/admin/calificaciones", label: "Calificaciones" },
-              ].map(({ path, label }) => (
-                <Link
-                  key={path}
-                  href={path}
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${isActive(path)
-                      ? "bg-indigo-600 text-white"
-                      : "text-gray-900 hover:bg-gray-100 hover:text-indigo-600"
-                    }`}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Menú del usuario */}
-          <div className="ml-3 relative">
-            <button
-              type="button"
-              className="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <span className="sr-only">Ver notificaciones</span>
-              <svg
-                className="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 18c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z"
-                />
-              </svg>
-            </button>
-          </div>
+    <aside className="fixed top-0 left-0 h-screen w-64 bg-white shadow-lg dark:bg-gray-800 flex flex-col z-50">
+      {/* Logo y título */}
+      <div className="flex items-center px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <img className="h-12 w-auto" src="/logo.png" alt="Logo Escuela" />
+        <div className="ml-4">
+          <h1 className="text-lg font-bold text-blue-800 dark:text-white">E.S.T.I N° 70</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Panel Administrativo</p>
         </div>
       </div>
-    </nav>
+
+      {/* Menú de navegación con fondo igual que zona logo y título */}
+      <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto bg-white dark:bg-gray-800">
+        {menuItems.map((item) => (
+          <Link
+            key={item.path}
+            href={item.path}
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+              isActive(item.path)
+                ? "bg-blue-600 text-white"
+                : "text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-200 dark:hover:bg-gray-700"
+            }`}
+          >
+            <svg
+              className={`w-5 h-5 mr-3 ${
+                isActive(item.path) ? "text-white" : "text-gray-500 dark:text-gray-400"
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
+            </svg>
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Perfil y menú desplegable */}
+      <div className="px-4 py-4 border-t border-gray-200 dark:border-gray-700" ref={profileMenuRef}>
+        <button
+          onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+          className="w-full flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+        >
+          <img
+            className="h-8 w-8 rounded-full border-2 border-blue-500"
+            src="/avatar-default.png"
+            alt="Usuario"
+          />
+          <span className="font-medium">Admin</span>
+        </button>
+
+        {isProfileMenuOpen && (
+          <div className="mt-2 rounded-md shadow-lg bg-white dark:bg-gray-800">
+            <Link
+              href="/admin/perfil"
+              className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Mi Perfil
+            </Link>
+            <Link
+              href="/admin/configuracion"
+              className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Configuración
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
+        )}
+      </div>
+    </aside>
   );
 };
 

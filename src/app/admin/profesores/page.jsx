@@ -1,100 +1,267 @@
 "use client";
 import Navbar from "../components/navbar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "../components/modal";
+import TableHeader from "../components/TableHeader";
+import SearchBar from "../components/SearchBar";
+import Swal from 'sweetalert2';
+import { getAllTeachersAsAdmin, addTeacher, updateTeacher, deleteTeacher } from "@/app/Service/TeacherService";
 import "../../Styles/professors.css";
 
 export default function PageProfessors() {
-
-    const [professors, setProfessors] = useState([
-        { id: 1, nombre: "Juan", apellido: "Pérez", correo: "juan@correo.com", contrasenia: "", telefono: "2711234567" },
-        // Más profesores si es necesario
-    ]);
-
+    const [teachers, setTeachers] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentProfessor, setCurrentProfessor] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isAuth, setIsAuth] = useState(false);
+    const [formData, setFormData] = useState({
+        idTeacher: "",
+        name: "",
+        lastName: "",
+        phoneNumber: "",
+        email: "",
+        password: "",
+        role: "TEACHER"
+    });
 
-    const handleOpenModal = (professor = null) => {
-        setCurrentProfessor(professor);
-        setIsModalOpen(true);
-    }
+    useEffect(() => {
+        checkAuthentication();
+    }, []);
 
-    const handleCloseModal = () => {
-        setCurrentProfessor(null);
-        setIsModalOpen(false);
-    }
+    const validateForm = () => {
+        const { name, lastName, phoneNumber, email, password, idTeacher } = formData;
 
-    const handleSaveProfessor = (professor) => {
-        if (professor.id) {
-            setProfessors(professors.map((s) => (s.id === professor.id ? professor : s)));
-        } else {
-            professor.id = professors.length + 1;
-            setProfessors([...professors, professor]);
+        if (!name || !lastName || !phoneNumber || !email) {
+            Swal.fire("Error", "Los campos Nombre, Apellido, Teléfono y Correo electrónico son obligatorios", "error");
+            return false;
         }
-        handleCloseModal();
+
+        if (!idTeacher && !password) {
+            Swal.fire("Error", "La contraseña es obligatoria al crear un profesor", "error");
+            return false;
+        }
+
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+        if (!emailPattern.test(email)) {
+            Swal.fire("Error", "El correo electrónico no es válido", "error");
+            return false;
+        }
+
+        const phonePattern = /^[0-9]{10}$/;
+        if (!phonePattern.test(phoneNumber)) {
+            Swal.fire("Error", "El número de teléfono no es válido", "error");
+            return false;
+        }
+
+        return true;
     };
 
-    return (
-        <>
-            <Navbar />
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                <h1 className="text-2xl font-semibold text-gray-900">Profesores</h1>
-                <div className="mt-4">
-                    <div className="flex-1 max-w-xs">
-                        <input
-                            type="text"
-                            placeholder="Buscar..."
-                            className="block w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div className="flex justify-end">
+    const checkAuthentication = () => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            setIsAuth(true);
+            fetchTeachers();
+        } else {
+            setIsAuth(false);
+        }
+    };
+
+    const fetchTeachers = async () => {
+        await getAllTeachersAsAdmin(setTeachers);
+    };
+
+    const handleOpenModal = (teacher = null) => {
+        if (teacher) {
+            setFormData({
+                idTeacher: teacher.idTeacher,
+                name: teacher.name,
+                lastName: teacher.lastName,
+                phoneNumber: teacher.phoneNumber,
+                email: teacher.email,
+                password: "",
+                role: teacher.role,
+            });
+        } else {
+            resetForm();
+        }
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        resetForm();
+        setIsModalOpen(false);
+    };
+
+    const resetForm = () => {
+        setFormData({
+            idTeacher: "",
+            name: "",
+            lastName: "",
+            phoneNumber: "",
+            email: "",
+            password: "",
+            role: "TEACHER"
+        });
+    };
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        try {
+            const payload = {
+                idTeacher: formData.idTeacher || undefined,
+                name: formData.name,
+                lastName: formData.lastName,
+                phoneNumber: formData.phoneNumber,
+                email: formData.email,
+                role: formData.role
+            };
+
+            if (!formData.idTeacher) {
+                payload.password = formData.password;
+            }
+            else if (formData.password) {
+                payload.password = formData.password;
+            }
+
+            if (formData.idTeacher) {
+                await updateTeacher(payload);
+                Swal.fire("Profesor actualizado con éxito", "", "success");
+            } else {
+                await addTeacher(payload);
+                Swal.fire("Profesor agregado con éxito", "", "success");
+            }
+
+            await fetchTeachers();
+            handleCloseModal();
+        } catch (error) {
+            console.error("Error al guardar el profesor:", error);
+            Swal.fire("Error al guardar el profesor", "", "error");
+        }
+    };
+
+    const handleDelete = async (idTeacher) => {
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: "No podrás revertir esto.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await deleteTeacher(idTeacher);
+                await fetchTeachers();
+                Swal.fire("Profesor eliminado con éxito", "", "success");
+            } catch (error) {
+                console.error("Error al eliminar el profesor:", error);
+                Swal.fire("Error al eliminar el profesor", "", "error");
+            }
+        }
+    };
+
+    const filteredProfessors = teachers.filter(teacher =>
+        teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        teacher.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        teacher.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (!isAuth) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold">No tienes permiso para acceder a esta página</h1>
+                    <p className="mt-4 text-gray-600">Por favor, inicia sesión con una cuenta de administrador.</p>
+                    <div className="mt-6">
                         <button
-                            onClick={() => handleOpenModal()}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            onClick={() => (window.location.href = "/")}
                         >
-                            Nuevo profesor
+                            Iniciar sesión
                         </button>
                     </div>
-                    <div className="mt-4">
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-white">
+            <Navbar />
+            <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
+                <TableHeader
+                    title="Profesores"
+                    onAdd={() => handleOpenModal()}
+                    buttonLabel="Nuevo Profesor"
+                />
+
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div className="p-6">
+                        <SearchBar onSearch={setSearchTerm} />
+
                         <div className="overflow-x-auto">
-                            <table className="table-auto w-full">
-                                <thead>
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-2">ID</th>
-                                        <th className="px-4 py-2">Nombre</th>
-                                        <th className="px-4 py-2">Apellido</th>
-                                        <th className="px-4 py-2">Correo electrónico</th>
-                                        <th className="px-4 py-2">Teléfono</th>
-                                        <th className="px-4 py-2">Acciones</th>
+                                        {["ID", "Nombre", "Apellido", "Correo electrónico", "Teléfono", "Acciones"].map((header) => (
+                                            <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                {header}
+                                            </th>
+                                        ))}
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {professors.map((professor) => (
-                                        <tr key={professor.id} className="border-b">
-                                            <td className="border px-4 py-2">{professor.id}</td>
-                                            <td className="border px-4 py-2">{professor.nombre}</td>
-                                            <td className="border px-4 py-2">{professor.apellido}</td>
-                                            <td className="border px-4 py-2">{professor.correo}</td>
-                                            <td className="border px-4 py-2">{professor.telefono}</td>
-                                            <td className="border px-4 py-2">
-                                                <div className="flex justify-center space-between">
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {filteredProfessors.map((teacher) => (
+                                        <tr key={teacher.idTeacher} className="hover:bg-gray-50 transition-colors duration-200">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {teacher.idTeacher}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {teacher.name}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {teacher.lastName}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {teacher.email}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {teacher.phoneNumber}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                <div className="flex space-x-2">
                                                     <button
-                                                        onClick={() => handleOpenModal(professor)}
-                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md justify-space-between"
+                                                        onClick={() => handleOpenModal(teacher)}
+                                                        className="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium transition-colors duration-200"
                                                     >
+                                                        <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
                                                         Editar
                                                     </button>
                                                     <button
-                                                        onClick={() => {
-                                                            setProfessors(professors.filter((s) => s.id !== professor.id));
-                                                        }}
-                                                        className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md ml-2"
+                                                        onClick={() => handleDelete(teacher.idTeacher)}
+                                                        className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium transition-colors duration-200"
                                                     >
+                                                        <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
                                                         Eliminar
                                                     </button>
                                                 </div>
                                             </td>
-                                            <td className="border px-4 py-2">{professor.contrasenia}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -102,106 +269,112 @@ export default function PageProfessors() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
+
             <Modal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
-                title={currentProfessor ? "Editar profesor" : "Nuevo profesor"}
+                title={formData.idTeacher ? "Editar profesor" : "Nuevo profesor"}
             >
-                <ProfessorForm
-                    professor={currentProfessor}
-                    onSave={handleSaveProfessor}
-                    onClose={handleCloseModal}
-                />
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
+                        <input
+                            type="text"
+                            name="name"
+                            id="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellido</label>
+                        <input
+                            type="text"
+                            name="lastName"
+                            id="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Teléfono</label>
+                        <input
+                            type="text"
+                            name="phoneNumber"
+                            id="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo electrónico</label>
+                        <input
+                            type="email"
+                            name="email"
+                            id="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            required
+                            style={{
+                                appearance: "none",
+                                border: "1px solid #ccc",
+                                padding: "10px",
+                                width: "100%",
+                                fontSize: "16px",
+                                borderRadius: "4px",
+                            }}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            Contraseña {formData.idTeacher ? "(opcional al editar)" : ""}
+                        </label>
+                        <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            required={!formData.idTeacher}
+                            style={{
+                                appearance: "none",
+                                border: "1px solid #ccc",
+                                padding: "10px",
+                                width: "100%",
+                                fontSize: "16px",
+                                borderRadius: "6px",
+                            }}
+                        />
+                    </div>
+
+                    <input type="hidden" name="role" value="TEACHER" />
+
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            type="button"
+                            onClick={handleCloseModal}
+                            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                            {formData.idTeacher ? "Actualizar" : "Crear"}
+                        </button>
+                    </div>
+                </form>
             </Modal>
-        </>
-    );
-}
-
-function ProfessorForm({ professor, onSave, onClose }) {
-    const [formData, setFormData] = useState(
-        professor || { nombre: "", apellido: "", correo: "", contrasenia: "", telefono: "" }
-    );
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
-    return (
-        <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 gap-6">
-                <div className="mb-4">
-                    <label htmlFor="nombre" className="block text-sm font-semibold text-gray-900">Nombre</label>
-                    <input
-                        type="text"
-                        name="nombre"
-                        value={formData.nombre}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="apellido" className="block text-sm font-semibold text-gray-900">Apellido </label>
-                    <input
-                        type="text"
-                        name="apellido"
-                        value={formData.apellido}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="correo" className="block text-sm font-semibold text-gray-900">Correo electrónico</label>
-                    <input
-                        type="email"
-                        name="correo"
-                        value={formData.correo}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="contraseña" className="block text-sm font-semibold text-gray-900">Contraseña</label>
-                    <input
-                        type="password"
-                        name="contraseña"
-                        id="contraseña"
-                        value={formData.contrasenia}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                </div>
-                <div className="mb-4">
-                    <label htmlFor="telefono" className="block text-sm font-semibold text-gray-900">Teléfono</label>
-                    <input
-                        type="tel"
-                        name="telefono"
-                        value={formData.telefono}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-2 mt-1 text-gray-900 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                </div>
-                <div className="flex justify-end">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-md"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="submit"
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md ml-2"
-                    >
-                        Guardar
-                    </button>
-                </div>
-            </div>
-        </form>
+        </div>
     );
 }

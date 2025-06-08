@@ -4,7 +4,7 @@ export default function PageAdmin() {
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar />
-            <div className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
+            <div className="container mx-auto px-4 py-8">
                 <h1 className="text-3xl font-bold text-blue-800 mb-6">Panel de Administración Escolar</h1>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -18,21 +18,21 @@ export default function PageAdmin() {
                         </div>
                         <p className="text-gray-600 mb-4">Gestión de matrículas, asistencia y expedientes académicos.</p>
                         <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-                            Administrar Estudiantes
+                            Ver Estudiantes
                         </button>
                     </div>
 
-                    {/* Sección de Profesores */}
+                    {/* Sección de Grados y Materias */}
                     <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
                         <div className="flex items-center mb-4">
                             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
-                            <h2 className="text-xl font-semibold text-gray-800 ml-3">Profesores</h2>
-                        </div>
-                        <p className="text-gray-600 mb-4">Control de personal docente, horarios y asignación de materias.</p>
+                            <h2 className="text-xl font-semibold text-gray-800 ml-3">Grados y Materias</h2>
+                            </div>
+                        <p className="text-gray-600 mb-4">Registro y asignación de grados y materias escolares.</p>
                         <button className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
-                            Gestionar Profesores
+                            Ver Grados y Materias
                         </button>
                     </div>
 
@@ -46,7 +46,7 @@ export default function PageAdmin() {
                         </div>
                         <p className="text-gray-600 mb-4">Registro y consulta de calificaciones y boletines.</p>
                         <button className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors">
-                            Ver Calificaciones
+                            Administrar Calificaciones
                         </button>
                     </div>
 
