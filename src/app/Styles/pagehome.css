@@ -1,0 +1,135 @@
+.customCarousel {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.carouselContent {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 500px;
+}
+
+.carouselImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carouselCard {
+  position: absolute;
+  left: 150px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+  padding: 30px;
+  border-radius: 15px;
+  max-width: 35%;
+  z-index: 2;
+}
+
+.carouselCard h3 {
+  font-size: 30px;
+  margin-bottom: 15px;
+}
+
+.carouselCard p {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.carouselCard button {
+  background-color: #000000;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+
+.carouselCard button:hover {
+  background-color: #525252;
+}
+
+.title-carrousel {
+    font-size: 38px; 
+    color: #ffffff; 
+    line-height: 1.5; 
+    text-shadow: 0 4px 6px rgb(0, 0, 0); 
+    position: relative;
+    z-index: 1;
+}
+
+.description {
+    font-size: 25px; 
+    color: #ffffff; 
+    line-height: 1.5;
+    text-shadow: 0 4px 6px rgb(0, 0, 0); 
+    position: relative;
+    z-index: 1;
+}
+
+.card-img-top {
+    max-height: 300px; 
+    object-fit: cover;
+    width: 100%;
+  }
+
+.side-image {
+    width: 20%;
+    height: 200px; 
+    margin: 0 10px; 
+    object-fit: cover; 
+    border-radius: 15px;
+}
+
+.center-image {
+    width: 600px;
+    height: 400px; 
+    object-fit: cover; 
+    border-radius: 15px;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    background-color: #ffffff00; 
+    border-radius: 50%; 
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+    border-radius: 50%; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    outline: none;
+}
+
+.custom-card{
+ margin-top: 20px;
+ margin-bottom: 20px;
+ display: flex;
+ align-items: center;
+}
+
+.custom-carousel .btn-carrusel {
+    background-color: #01A859;
+    border-color: #01A859;
+}
+
+.custom-carousel .btn-carrusel:hover {
+    background-color: #75ddac;
+    border-color: transparent;
+}
+
+@media only screen and (max-width: 768px) {
+    .side-image {
+        display: none; 
+    }
+
+    .center-image {
+        width: 100%; 
+    }
+}

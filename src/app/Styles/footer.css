@@ -1,0 +1,33 @@
+.footer {
+    background-color: #ffffff;
+    color: black;
+    padding: 20px;
+}
+
+.footer .fab {
+    color: black;
+    margin-right: 15px;
+}
+
+.footer .fab:hover {
+    color: white; 
+}
+
+.footer img {
+    filter: invert(100%);
+}
+
+@media (max-width: 768px) {
+    .footer {
+        text-align: center; 
+    }
+
+    .footer .row {
+        flex-direction: column; 
+        align-items: center;
+    }
+
+    .footer .col-md-4 {
+        margin-bottom: 20px; 
+    }
+}

@@ -1,0 +1,122 @@
+:root {
+  --mainColor: #ffffff;
+  --mainColorLight: #bdbdbd;
+  --secondaryColor: #db2b39;
+  --textColor: #000000;
+}
+
+header {
+  background-color: var(--mainColor);
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-brand img {
+  border-radius: 10px;
+}
+
+nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  transition: transform 0.3s ease-in-out;
+  box-shadow: none;
+  
+ border: 2px dashed rgb(255, 255, 255);
+}
+
+nav a {
+  color: var(--textColor);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 5px;
+  transition: background-color 0.2s ease;
+}
+
+nav a:hover,
+nav a.active {
+  background-color: var(--mainColorLight);
+}
+
+nav i.icon-active {
+  color: var(--secondaryColor);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--mainColor);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: none;
+  border-radius: 0 0 10px 10px;
+}
+
+.dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu li a {
+  display: block;
+  padding: 10px;
+  color: var(--textColor);
+}
+
+.dropdown-menu li a:hover {
+  background-color: var(--mainColorLight);
+  
+}
+
+/* Botones hamburguesa */
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--textColor);
+  font-size: 1.5rem;
+  display: none;
+}
+
+.nav-close-btn {
+  display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  nav {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    flex-direction: column;
+    background-color: var(--mainColor);
+    height: 100vh;
+    width: 250px;
+    padding-top: 5rem;
+    transform: translateX(100%);
+    z-index: 1000;
+  }
+
+  nav.responsive_nav {
+    transform: translateX(-30%);
+    right: 0;
+  }
+
+  .nav-btn {
+    display: block;
+  }
+
+  .nav-close-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: block;
+  }
+
+  .dropdown-menu {
+    position: static;
+  }
+}
