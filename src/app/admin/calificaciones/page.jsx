@@ -1,135 +1,243 @@
 "use client";
 
+import Swal from 'sweetalert2';
+import { getAllCardex, addCardex, updateCardex, deleteCardex } from "@/app/Service/CardexService";
+import { getAllGroups } from '@/app/Service/GroupService';
+import { getAllStudents } from "@/app/Service/StudentService";
+import { getAllSubjects } from "@/app/Service/SubjectService";
+import { getAllTeachersAsAdmin } from "@/app/Service/TeacherService";
 import Navbar from "../components/navbar";
-import { useState } from "react";
-import Modal from "../components/Modal";
 import TableHeader from "../components/TableHeader";
+import { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
+import Modal from "../components/Modal";
 
 export default function PageCalificaciones() {
-    const [calificaciones, setCalificaciones] = useState([
-        { 
-            id: 1, 
-            nombre: "Juan", 
-            apellido: "Pérez", 
-            grado: "1°", 
-            grupo: "A", 
-            materia: "Matemáticas", 
-            calificacion: 10, 
-            periodo: "1er Bimestre",
-            observaciones: "" 
-        },
-        { 
-            id: 2, 
-            nombre: "María", 
-            apellido: "García", 
-            grado: "2°", 
-            grupo: "B", 
-            materia: "Español", 
-            calificacion: 9, 
-            periodo: "1er Bimestre",
-            observaciones: "" 
-        },
-        // Más calificaciones de ejemplo...
-    ]);
-
+    const [grades, setGrades] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentCalificacion, setCurrentCalificacion] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filtroGrado, setFiltroGrado] = useState("");
-    const [filtroGrupo, setFiltroGrupo] = useState("");
+    const [isAuth, setIsAuth] = useState(false);
+    const [formData, setFormData] = useState({
+        idCardex: "",
+        groupName: "",
+        grade: "",
+        period: "",
+        teacherName: "",
+        teacherLastName: "",
+        studentName: "",
+        studentLastNamePaternal: "",
+        studentLastNameMaternal: "",
+        subjectName: "",
+        firstPartial: "",
+        secondPartial: "",
+        thirdPartial: "",
+        finalGrade: ""
+    });
 
-    // Obtener grados y grupos únicos
-    const grados = [...new Set(calificaciones.map(cal => cal.grado))].sort();
-    const grupos = [...new Set(calificaciones.map(cal => cal.grupo))].sort();
+    useEffect(() => {
+        checkAuthentication();
+    }, []);
 
-    const handleOpenModal = (calificacion = null) => {
-        setCurrentCalificacion(calificacion);
+    const validateForm = () => {
+        const { groupName, grade, period, teacherName, teacherLastName, studentName, studentLastNamePaternal, studentLastNameMaternal, subjectName, firstPartial, secondPartial, thirdPartial } = formData;
+        if (!groupName || !grade || !period || !teacherName || !teacherLastName || !studentName || !studentLastNamePaternal || !studentLastNameMaternal || !subjectName || !firstPartial || !secondPartial || !thirdPartial) {
+            Swal.fire("Error", "Todos los campos son obligatorios", "error");
+            return false;
+        }
+        return true;
+
+    };
+
+    const checkAuthentication = () => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            setIsAuth(true);
+            fetchCardex();
+        } else {
+            setIsAuth(false);
+        }
+    };
+
+    const fetchCardex = async () => {
+        await getAllCardex(setGrades);
+    };
+
+    const handleOpenModal = (grade = null) => {
+        if (grade) {
+            setFormData({
+                idCardex: grade.idCardex,
+                groupName: grade.groupName,
+                grade: grade.grade,
+                period: grade.period,
+                teacherName: grade.teacherName,
+                teacherLastName: grade.teacherLastName,
+                studentName: grade.studentName,
+                studentLastNamePaternal: grade.studentLastNamePaternal,
+                studentLastNameMaternal: grade.studentLastNameMaternal,
+                subjectName: grade.subjectName,
+                firstPartial: grade.firstPartial,
+                secondPartial: grade.secondPartial,
+                thirdPartial: grade.thirdPartial,
+                finalGrade: grade.finalGrade
+            });
+        } else {
+            resetForm();
+        }
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
-        setCurrentCalificacion(null);
+        resetForm();
         setIsModalOpen(false);
     };
 
-    const handleSaveCalificacion = (calificacion) => {
-        if (calificacion.id) {
-            setCalificaciones(calificaciones.map((s) => (s.id === calificacion.id ? calificacion : s)));
-        } else {
-            calificacion.id = calificaciones.length + 1;
-            setCalificaciones([...calificaciones, calificacion]);
-        }
-        handleCloseModal();
+    const resetForm = () => {
+        setFormData({
+            idCardex: "",
+            groupName: "",
+            grade: "",
+            period: "",
+            teacherName: "",
+            teacherLastName: "",
+            studentName: "",
+            studentLastNamePaternal: "",
+            studentLastNameMaternal: "",
+            subjectName: "",
+            firstPartial: "",
+            secondPartial: "",
+            thirdPartial: "",
+            finalGrade: ""
+        });
     };
 
-    const filteredCalificaciones = calificaciones.filter(cal => {
-        const matchesSearch = 
-            cal.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cal.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            cal.materia.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        const matchesGrado = filtroGrado === "" || cal.grado === filtroGrado;
-        const matchesGrupo = filtroGrupo === "" || cal.grupo === filtroGrupo;
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
 
-        return matchesSearch && matchesGrado && matchesGrupo;
-    });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        try {
+            const payload = {
+                idCardex: formData.idCardex,
+                Group: {
+                    groupName: formData.groupName,
+                    grade: formData.grade,
+                    period: formData.period
+                },
+                Teacher: {
+                    name: formData.teacherName,
+                    lastName: formData.teacherLastName
+                },
+                Student: {
+                    name: formData.studentName,
+                    lastNamePaternal: formData.studentLastNamePaternal,
+                    lastNameMaternal: formData.studentLastNameMaternal
+                },
+                Subject: {
+                    name: formData.subjectName
+                },
+                firstPartial: formData.firstPartial,
+                secondPartial: formData.secondPartial,
+                thirdPartial: formData.thirdPartial,
+                finalGrade: formData.finalGrade
+
+            };
+
+            if (formData.idCardex) {
+                await updateCardex(payload);
+                Swal.fire("Calificación actualizada con éxito", "", "success");
+            } else {
+                await addCardex(payload);
+                Swal.fire("Calificación agregada con éxito", "", "success");
+            }
+
+            await fetchCardex();
+            handleCloseModal();
+        } catch (error) {
+            console.error("Error al guardar la calificación:", error);
+            Swal.fire("Error al guardar la calificación", "", "error");
+        }
+    };
+
+    const handleDelete = async (idCardex) => {
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: "No podrás revertir esto.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await deleteCardex(idCardex);
+                await fetchCardex();
+                Swal.fire("Calificación eliminada con éxito", "", "success");
+            } catch (error) {
+                console.error("Error al eliminar la calificación:", error);
+                Swal.fire("Error al eliminar la calificación", "", "error");
+            }
+        }
+    };
+
+    const filteredCardex = grades.filter(cal =>
+        (cal.Student?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Student.lastNamePaternal.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Student.lastNameMaternal.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Group.groupName.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Group.grade.toString() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Group.period.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Teacher.name.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Teacher.lastName.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
+
+    if (!isAuth) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold">No tienes permiso para acceder a esta página</h1>
+                    <p className="mt-4 text-gray-600">Por favor, inicia sesión con una cuenta de administrador.</p>
+                    <div className="mt-6">
+                        <button
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            onClick={() => (window.location.href = "/")}
+                        >
+                            Iniciar sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white">
             <Navbar />
             <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
-                <TableHeader 
-                    title="Calificaciones" 
-                    onAdd={() => handleOpenModal()} 
+                <TableHeader
+                    title="Calificaciones"
+                    onAdd={() => handleOpenModal()}
                     buttonLabel="Nueva Calificación"
                 />
 
                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
                     <div className="p-6">
-                        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 mb-6">
-                            <div className="flex-1 mb-4 md:mb-0">
-                                <SearchBar onSearch={setSearchTerm} />
-                            </div>
-                            <div className="flex space-x-4">
-                                <div className="w-40">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Grado
-                                    </label>
-                                    <select
-                                        value={filtroGrado}
-                                        onChange={(e) => setFiltroGrado(e.target.value)}
-                                        className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    >
-                                        <option value="">Todos</option>
-                                        {grados.map(grado => (
-                                            <option key={grado} value={grado}>{grado}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="w-40">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Grupo
-                                    </label>
-                                    <select
-                                        value={filtroGrupo}
-                                        onChange={(e) => setFiltroGrupo(e.target.value)}
-                                        className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    >
-                                        <option value="">Todos</option>
-                                        {grupos.map(grupo => (
-                                            <option key={grupo} value={grupo}>{grupo}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
+                        <SearchBar onSearch={setSearchTerm} />
+
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        {["ID", "Nombre", "Apellido", "Grado", "Grupo", "Materia", "Calificación", "Periodo", "Acciones"].map((header) => (
+                                        {["ID", "Grupo", "Profesor", "Alumno", "Materia", "1er Parcial", "2do Parcial", "3er Parcial", "Calificación Final", "Acciones"].map((header) => (
                                             <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 {header}
                                             </th>
@@ -137,37 +245,39 @@ export default function PageCalificaciones() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredCalificaciones.map((calificacion) => (
-                                        <tr key={calificacion.id} className="hover:bg-gray-50 transition-colors duration-200">
+                                    {filteredCardex.map((calificacion) => (
+                                        <tr key={calificacion.idCardex} className="hover:bg-gray-50 transition-colors duration-200">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {calificacion.id}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.nombre}
+                                                {calificacion.grade}° {calificacion.groupName} - {calificacion.period}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.apellido}
+                                                {calificacion.teacherName} {calificacion.teacherLastName}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.grado}
+                                                {calificacion.studentName} {calificacion.studentLastName}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.grupo}
+                                                {calificacion.subjectName}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.materia}
+                                                {calificacion.firstPartial}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {calificacion.secondPartial}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {calificacion.thirdPartial}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    calificacion.calificacion >= 8 ? 'bg-green-100 text-green-800' :
-                                                    calificacion.calificacion >= 6 ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
-                                                }`}>
-                                                    {calificacion.calificacion}
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${calificacion.finalGrade >= 8 ? 'bg-green-100 text-green-800' :
+                                                    calificacion.finalGrade >= 6 ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {calificacion.finalGrade}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.periodo}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 <div className="flex space-x-2">
@@ -181,7 +291,7 @@ export default function PageCalificaciones() {
                                                         Editar
                                                     </button>
                                                     <button
-                                                        onClick={() => setCalificaciones(calificaciones.filter((s) => s.id !== calificacion.id))}
+                                                        onClick={() => handleDelete(calificacion.id)}
                                                         className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium transition-colors duration-200"
                                                     >
                                                         <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -198,136 +308,131 @@ export default function PageCalificaciones() {
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
 
             <Modal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
-                title={currentCalificacion ? "Editar Calificación" : "Nueva Calificación"}
+                title={formData.id ? "Editar Calificación" : "Nueva Calificación"}
             >
-                <CalificacionForm
-                    calificacion={currentCalificacion}
-                    onSave={handleSaveCalificacion}
-                    onClose={handleCloseModal}
-                />
-            </Modal>
-        </div>
-    );
-}
-
-function CalificacionForm({ calificacion, onSave, onClose }) {
-    const [formData, setFormData] = useState(
-        calificacion || { 
-            nombre: "", 
-            apellido: "", 
-            grado: "", 
-            grupo: "", 
-            materia: "",
-            calificacion: "",
-            periodo: "",
-            observaciones: "" 
-        }
-    );
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onSave(formData);
-    };
-
-    const fields = [
-        { name: "nombre", label: "Nombre del Alumno", type: "text" },
-        { name: "apellido", label: "Apellido del Alumno", type: "text" },
-        { name: "grado", label: "Grado", type: "select", options: ["1°", "2°", "3°"] },
-        { name: "grupo", label: "Grupo", type: "select", options: ["A", "B", "C"] },
-        { name: "materia", label: "Materia", type: "select", options: [
-            "Matemáticas",
-            "Español",
-            "Ciencias",
-            "Historia",
-            "Geografía",
-            "Inglés",
-            "Educación Física"
-        ]},
-        { name: "calificacion", label: "Calificación", type: "number", min: 0, max: 10, step: 0.1 },
-        { name: "periodo", label: "Periodo", type: "select", options: [
-            "1er Bimestre",
-            "2do Bimestre",
-            "3er Bimestre",
-            "4to Bimestre",
-            "5to Bimestre"
-        ]},
-        { name: "observaciones", label: "Observaciones", type: "textarea" }
-    ];
-
-    return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                {fields.map((field) => (
-                    <div key={field.name} className={field.type === "textarea" ? "sm:col-span-2" : ""}>
-                        <label htmlFor={field.name} className="block text-sm font-medium text-gray-700">
-                            {field.label}
-                        </label>
-                        {field.type === "select" ? (
-                            <select
-                                name={field.name}
-                                id={field.name}
-                                value={formData[field.name]}
-                                onChange={handleChange}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                required
-                            >
-                                <option value="">Seleccionar...</option>
-                                {field.options.map(option => (
-                                    <option key={option} value={option}>{option}</option>
-                                ))}
-                            </select>
-                        ) : field.type === "textarea" ? (
-                            <textarea
-                                name={field.name}
-                                id={field.name}
-                                rows={3}
-                                value={formData[field.name]}
-                                onChange={handleChange}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            />
-                        ) : (
-                            <input
-                                type={field.type}
-                                name={field.name}
-                                id={field.name}
-                                min={field.min}
-                                max={field.max}
-                                step={field.step}
-                                value={formData[field.name]}
-                                onChange={handleChange}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                required
-                            />
-                        )}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Grupo</label>
+                        <input
+                            type="text"
+                            name="Group.name"
+                            value={formData.Group?.groupName || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
                     </div>
-                ))}
-            </div>
-
-            <div className="flex justify-end space-x-3">
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                    Cancelar
-                </button>
-                <button
-                    type="submit"
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                    Guardar
-                </button>
-            </div>
-        </form>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Nombre del Profesor</label>
+                        <input
+                            type="text"
+                            name="Teacher.name"
+                            value={formData.Teacher?.teacherName || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Apellido del Profesor</label>
+                        <input
+                            type="text"
+                            name="Teacher.lastName"
+                            value={formData.Teacher?.teacherLastName || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Nombre del Alumno</label>
+                        <input
+                            type="text"
+                            name="Student.name"
+                            value={formData.Student?.studentName || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Apellido del Alumno</label>
+                        <input
+                            type="text"
+                            name="Student.lastName"
+                            value={formData.Student?.studentLastNamePaternal || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Materia</label>
+                        <input
+                            type="text"
+                            name="Subject.name"
+                            value={formData.Subject?.subjectName || ''}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Primer Parcial</label>
+                        <input
+                            type="number"
+                            name="firstPartial"
+                            value={formData.firstPartial}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Segundo Parcial</label>
+                        <input
+                            type="number"
+                            name="secondPartial"
+                            value={formData.secondPartial}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Tercer Parcial</label>
+                        <input
+                            type="number"
+                            name="thirdPartial"
+                            value={formData.thirdPartial}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Calificación Final</label>
+                        <input
+                            type="number"
+                            name="finalGrade"
+                            value={formData.finalGrade}
+                            onChange={handleChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            type="button"
+                            onClick={handleCloseModal}
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                            {formData.id ? "Actualizar" : "Crear"}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+        </div >
     );
 }
