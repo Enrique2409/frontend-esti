@@ -37,9 +37,9 @@ export default function Login() {
         console.log("Token de autenticación para iniciar seison:", token);
 
         if (role === "ADMIN") {
-          router.push("/admin");
+          router.push("/admin/inicio");
         } else if (role === "TEACHER") {
-          router.push("/profesor");
+          router.push("/profesor/inicio");
         } else {
           setError("Rol no reconocido.");
           setIsLoading(false);

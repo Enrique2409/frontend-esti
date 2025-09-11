@@ -5,6 +5,8 @@ const studentURL = `${baseURL}/student`;
 
 const getAuthToken = () => localStorage.getItem("token");
 
+//Borrar
+/*
 export const getAllStudents = async (setStudents) => {
     try {
         const token = getAuthToken();
@@ -21,6 +23,43 @@ export const getAllStudents = async (setStudents) => {
     } catch (error) {
         console.error("Error al obtener estudiantes:", error);
         setStudents([]);
+    }
+};
+*/
+
+export const getStudentsPaginated = async (page = 0, size = 10, setStudents, setPagination) => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log("No hay token de autenticación");
+            setStudents([]);
+            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+            return;
+        }
+
+        const response = await axios.get(`${studentURL}/`, {
+            params: { page, size },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const students = response.data.content || [];
+        setStudents(students);
+
+        const pagination = {
+            totalPages: response.data.totalPages,
+            totalElements: response.data.totalElements,
+            currentPage: response.data.number,
+            pageSize: response.data.size,
+            numberOfElements: response.data.numberOfElements,
+            first: response.data.first,
+            last: response.data.last
+        };
+        setPagination(pagination);
+
+    } catch (error) {
+        console.error("Error al obtener estudiantes paginados:", error);
+        setStudents([]);
+        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
     }
 };
 
