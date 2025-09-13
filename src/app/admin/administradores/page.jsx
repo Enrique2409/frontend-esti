@@ -7,6 +7,7 @@ import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
 import "../../Styles/admin.css";
 import Swal from 'sweetalert2';
+import FormField from "../components/FormField";
 import { getAllAdmin, addAdmin, updateAdmin, deleteAdmin, login } from "@/app/Service/AdminService";
 
 export default function PageAdministrators() {
@@ -23,6 +24,49 @@ export default function PageAdministrators() {
         password: "",
         role: "ADMIN",
     });
+
+    const [formErrors, setFormErrors] = useState({
+        name: "",
+        lastName: "",
+        phoneNumber: "",
+        email: "",
+        password: "",
+    });
+
+
+    const validateField = (name, value) => {
+        let error = "";
+
+        switch (name) {
+            case "name":
+                if (!value.trim()) error = "El nombre es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+
+            case "lastName":
+                if (!value.trim()) error = "El apellido es requerido";
+                break;
+
+            case "phoneNumber":
+                if (!value.trim()) error = "El teléfono es requerido";
+                else if (!/^\d{10}$/.test(value)) error = "Debe tener 10 dígitos";
+                break;
+
+            case "email":
+                if (!value.trim()) error = "El correo es requerido";
+                else if (!/\S+@\S+\.\S+/.test(value)) error = "Formato inválido";
+                break;
+
+            case "password":
+                if (!formData.idAdmin && !value.trim()) error = "La contraseña es requerida";
+                else if (value && value.length < 6) error = "Debe tener al menos 6 caracteres";
+                break;
+            default:
+                break;
+        }
+
+        setFormErrors(prev => ({ ...prev, [name]: error }));
+    };
 
     useEffect(() => {
         checkAuthentication();
@@ -76,15 +120,22 @@ export default function PageAdministrators() {
         });
     };
 
-    const handleChange = (e) => {
+    {/*const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
         });
+    };*/}
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        validateField(name, value);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         try {
             const dataToSend = { ...formData };
 
@@ -239,80 +290,69 @@ export default function PageAdministrators() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
                         <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
-                        <input
+                        <FormField
                             type="text"
                             name="name"
                             id="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            error={formErrors.name}
                             required
                         />
                     </div>
                     <div>
                         <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellido</label>
-                        <input
+                        <FormField
                             type="text"
                             name="lastName"
                             id="lastName"
                             value={formData.lastName}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            error={formErrors.lastName}
                             required
                         />
                     </div>
                     <div>
                         <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Teléfono</label>
-                        <input
+                        <FormField
                             type="text"
                             name="phoneNumber"
                             id="phoneNumber"
                             value={formData.phoneNumber}
-                            onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            onChange={(e) => {
+                                const value = e.target.value.replace(/\D/g, "");
+                                if (value.length <= 10) {
+                                    setFormData((prev) => ({ ...prev, phoneNumber: value }));
+                                }
+                            }}
+                            error={formErrors.phoneNumber}
                             required
                         />
                     </div>
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo electrónico</label>
-                        <input
+                        <FormField
                             type="email"
                             name="email"
                             id="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            error={formErrors.email}
                             required
-                            style={{
-                                appearance: "none",
-                                border: "1px solid #ccc",
-                                padding: "10px",
-                                width: "100%",
-                                fontSize: "16px",
-                                borderRadius: "4px",
-                            }}
                         />
                     </div>
                     <div>
                         <label htmlFor="password" className="password block text-sm font-medium text-gray-700">
                             Contraseña {formData.idAdmin ? "(opcional al editar)" : ""}
                         </label>
-                        <input
+                        <FormField
                             type="password"
                             name="password"
                             id="password"
                             value={formData.password}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            required={!formData.idAdmin} // Requerido solo al crear
-                            style={{
-                                appearance: "none",
-                                border: "1px solid #ccc",
-                                padding: "10px",
-                                width: "100%",
-                                fontSize: "16px",
-                                borderRadius: "6px",
-                            }}
+                            error={formErrors.password}
+                            required={!formData.idAdmin}
                         />
                     </div>
 

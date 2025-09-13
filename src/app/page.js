@@ -10,6 +10,15 @@ export default function Login() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const validateEmail = (email) => {
+    const re = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return re.test(email);
+  };
+
+  const validatePassword = (password) => {
+    return password.length >= 8;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -17,6 +26,18 @@ export default function Login() {
     setError("");
     if (email === "" || password === "") {
       setError("Por favor, completa todos los campos.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Por favor, ingresa un correo electrónico válido.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setError("La contraseña debe tener al menos 8 caracteres.");
       setIsLoading(false);
       return;
     }

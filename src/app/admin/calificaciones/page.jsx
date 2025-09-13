@@ -190,14 +190,14 @@ export default function PageCalificaciones() {
     };
 
     const filteredCardex = grades.filter(cal =>
-        (cal.Student?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Student.lastNamePaternal.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Student.lastNameMaternal.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Group.groupName.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Group.grade.toString() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Group.period.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Teacher.name.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Teacher.lastName.toLowerCase() || '').includes(searchTerm.toLowerCase())
+        (cal.Student?.studentName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Student?.studentLastNamePaternal?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Student?.studentLastNameMaternal?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Group?.groupName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Group?.grade?.toString() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Group?.period?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Teacher?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (cal.Teacher?.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     if (!isAuth) {
@@ -248,7 +248,7 @@ export default function PageCalificaciones() {
                                     {filteredCardex.map((calificacion) => (
                                         <tr key={calificacion.idCardex} className="hover:bg-gray-50 transition-colors duration-200">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.id}
+                                                {calificacion.idCardex}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {calificacion.grade}° {calificacion.groupName} - {calificacion.period}
@@ -257,7 +257,7 @@ export default function PageCalificaciones() {
                                                 {calificacion.teacherName} {calificacion.teacherLastName}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.studentName} {calificacion.studentLastName}
+                                                {calificacion.studentName} {calificacion.studentLastNamePaternal} {calificacion.studentLastNameMaternal}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {calificacion.subjectName}
@@ -315,123 +315,125 @@ export default function PageCalificaciones() {
                 onClose={handleCloseModal}
                 title={formData.id ? "Editar Calificación" : "Nueva Calificación"}
             >
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Grupo</label>
-                        <input
-                            type="text"
-                            name="Group.name"
-                            value={formData.Group?.groupName || ''}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Nombre del Profesor</label>
-                        <input
-                            type="text"
-                            name="Teacher.name"
-                            value={formData.Teacher?.teacherName || ''}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Apellido del Profesor</label>
-                        <input
-                            type="text"
-                            name="Teacher.lastName"
-                            value={formData.Teacher?.teacherLastName || ''}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Nombre del Alumno</label>
-                        <input
-                            type="text"
-                            name="Student.name"
-                            value={formData.Student?.studentName || ''}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Apellido del Alumno</label>
-                        <input
-                            type="text"
-                            name="Student.lastName"
-                            value={formData.Student?.studentLastNamePaternal || ''}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Materia</label>
-                        <input
-                            type="text"
-                            name="Subject.name"
-                            value={formData.Subject?.subjectName || ''}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Primer Parcial</label>
-                        <input
-                            type="number"
-                            name="firstPartial"
-                            value={formData.firstPartial}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Segundo Parcial</label>
-                        <input
-                            type="number"
-                            name="secondPartial"
-                            value={formData.secondPartial}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Tercer Parcial</label>
-                        <input
-                            type="number"
-                            name="thirdPartial"
-                            value={formData.thirdPartial}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Calificación Final</label>
-                        <input
-                            type="number"
-                            name="finalGrade"
-                            value={formData.finalGrade}
-                            onChange={handleChange}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div className="flex justify-end space-x-3">
-                        <button
-                            type="button"
-                            onClick={handleCloseModal}
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                            {formData.id ? "Actualizar" : "Crear"}
-                        </button>
-                    </div>
-                </form>
+                <div className="max-h-[70vh] overflow-y-auto pr-2">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Grupo</label>
+                            <input
+                                type="text"
+                                name="Group.name"
+                                value={formData.Group?.groupName || ''}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Nombre del Profesor</label>
+                            <input
+                                type="text"
+                                name="Teacher.name"
+                                value={formData.Teacher?.teacherName || ''}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Apellido del Profesor</label>
+                            <input
+                                type="text"
+                                name="Teacher.lastName"
+                                value={formData.Teacher?.teacherLastName || ''}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Nombre del Alumno</label>
+                            <input
+                                type="text"
+                                name="Student.name"
+                                value={formData.Student?.studentName || ''}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Apellido del Alumno</label>
+                            <input
+                                type="text"
+                                name="Student.lastName"
+                                value={formData.Student?.studentLastNamePaternal || ''}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Materia</label>
+                            <input
+                                type="text"
+                                name="Subject.name"
+                                value={formData.Subject?.subjectName || ''}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Primer Parcial</label>
+                            <input
+                                type="number"
+                                name="firstPartial"
+                                value={formData.firstPartial}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Segundo Parcial</label>
+                            <input
+                                type="number"
+                                name="secondPartial"
+                                value={formData.secondPartial}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Tercer Parcial</label>
+                            <input
+                                type="number"
+                                name="thirdPartial"
+                                value={formData.thirdPartial}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Calificación Final</label>
+                            <input
+                                type="number"
+                                name="finalGrade"
+                                value={formData.finalGrade}
+                                onChange={handleChange}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={handleCloseModal}
+                                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="submit"
+                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                                {formData.id ? "Actualizar" : "Crear"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </Modal>
         </div >
     );
