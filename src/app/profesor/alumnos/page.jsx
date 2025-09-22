@@ -8,6 +8,7 @@ import SearchBar from "../components/SearchBar";
 import Swal from "sweetalert2";
 import {
   getStudentsPaginated,
+  searchStudents,
   createStudent,
   updateStudent,
   deleteStudent,
@@ -33,29 +34,33 @@ export default function PageStudents() {
     phoneNumber: "",
   });
 
+  // cargar datos iniciales o búsqueda
   useEffect(() => {
-    fetchStudents(0);
-  }, [pageSize]);
+    fetchStudents(0, searchTerm);
+  }, [pageSize, searchTerm]);
 
-  const fetchStudents = async (page) => {
-    await getStudentsPaginated(page, pageSize, setStudents, setPagination);
+  const fetchStudents = async (page, keyword = "") => {
+    if (keyword.trim() !== "") {
+      await searchStudents(keyword, page, pageSize, setStudents, setPagination);
+    } else {
+      await getStudentsPaginated(page, pageSize, setStudents, setPagination);
+    }
   };
 
   const handleNextPage = () => {
     if (pagination.currentPage + 1 < pagination.totalPages) {
-      fetchStudents(pagination.currentPage + 1);
+      fetchStudents(pagination.currentPage + 1, searchTerm);
     }
   };
 
   const handlePrevPage = () => {
     if (pagination.currentPage > 0) {
-      fetchStudents(pagination.currentPage - 1);
+      fetchStudents(pagination.currentPage - 1, searchTerm);
     }
   };
 
   const handlePageSizeChange = (e) => {
     setPageSize(Number(e.target.value));
-
   };
 
   const handleOpenModal = (student = null) => {
@@ -103,7 +108,7 @@ export default function PageStudents() {
       } else {
         await createStudent(formToSend);
       }
-      await fetchStudents(pagination.currentPage);
+      await fetchStudents(pagination.currentPage, searchTerm);
       handleCloseModal();
       Swal.fire("Éxito", "Estudiante guardado correctamente", "success");
     } catch (error) {
@@ -127,7 +132,7 @@ export default function PageStudents() {
     if (result.isConfirmed) {
       try {
         await deleteStudent(idStudent);
-        await fetchStudents(pagination.currentPage);
+        await fetchStudents(pagination.currentPage, searchTerm);
         Swal.fire("Eliminado", "El estudiante ha sido eliminado.", "success");
       } catch (error) {
         console.error("Error deleting student:", error);
@@ -135,12 +140,6 @@ export default function PageStudents() {
       }
     }
   };
-
-  const filteredStudents = students.filter((student) =>
-    `${student.name} ${student.lastNamePaternal} ${student.lastNameMaternal}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -154,11 +153,14 @@ export default function PageStudents() {
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="p-6">
+            {/* Barra de búsqueda que dispara la búsqueda en cada cambio */}
             <SearchBar onSearch={setSearchTerm} />
 
             {/* Selector de tamaño de página */}
             <div className="mb-4">
-              <label className="mr-2 font-medium text-gray-700">Registros por página:</label>
+              <label className="mr-2 font-medium text-gray-700">
+                Registros por página:
+              </label>
               <select
                 value={pageSize}
                 onChange={handlePageSizeChange}
@@ -170,6 +172,7 @@ export default function PageStudents() {
               </select>
             </div>
 
+            {/* Tabla */}
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -194,7 +197,7 @@ export default function PageStudents() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStudents.map((student) => (
+                  {students.map((student) => (
                     <tr
                       key={student.idStudent}
                       className="hover:bg-gray-50 transition-colors duration-200"
@@ -244,11 +247,12 @@ export default function PageStudents() {
               </table>
             </div>
 
+            {/* Paginación */}
             <div className="flex justify-between items-center mt-4">
               <button
                 onClick={handlePrevPage}
                 disabled={pagination.currentPage === 0}
-                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50 text-white"
               >
                 Anterior
               </button>
@@ -258,7 +262,7 @@ export default function PageStudents() {
               <button
                 onClick={handleNextPage}
                 disabled={pagination.currentPage + 1 >= pagination.totalPages}
-                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50 text-white"
               >
                 Siguiente
               </button>
@@ -267,6 +271,7 @@ export default function PageStudents() {
         </div>
       </main>
 
+      {/* Modal para crear/editar */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -282,7 +287,10 @@ export default function PageStudents() {
             { label: "Teléfono", name: "phoneNumber", type: "text" },
           ].map(({ label, name, type }) => (
             <div key={name}>
-              <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor={name}
+                className="block text-sm font-medium text-gray-700"
+              >
                 {label}
               </label>
               <input
@@ -300,13 +308,13 @@ export default function PageStudents() {
             <button
               type="button"
               onClick={handleCloseModal}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
             >
               {formData.idStudent ? "Actualizar" : "Crear"}
             </button>
