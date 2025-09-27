@@ -17,7 +17,8 @@ export const login = async (credentials) => {
         throw error;
     }
 };
-
+//Borrar
+/*
 export const getAllTeachersAsAdmin = async (setTeachers) => {
     try {
         const token = getAuthToken();
@@ -34,6 +35,43 @@ export const getAllTeachersAsAdmin = async (setTeachers) => {
     } catch (error) {
         console.error("Error al obtener profesores:", error);
         setTeachers([]);
+    }
+};
+*/
+
+export const getTeachersPaginated = async (page = 0, size = 10, setTeachers, setPagination) => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log("No hay token de autenticación");
+            setTeachers([]);
+            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+            return;
+        }
+
+        const response = await axios.get(`${teacherURL}/`, {
+            params: { page, size },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const teacher = response.data.content || [];
+        setTeachers(teacher);
+
+        const pagination = {
+            totalPages: response.data.totalPages,
+            totalElements: response.data.totalElements,
+            currentPage: response.data.number,
+            pageSize: response.data.size,
+            numberOfElements: response.data.numberOfElements,
+            first: response.data.first,
+            last: response.data.last
+        };
+        setPagination(pagination);
+
+    } catch (error) {
+        console.error("Error al obtener profesores paginados:", error);
+        setTeachers([]);
+        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
     }
 };
 

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const baseURL = "http://localhost:8080/esti";
-const adminURL = `${baseURL}/admin`;
+const subjectURL = `${baseURL}/subject`;
 
 const getAuthToken = () => localStorage.getItem("token");
 console.log("Token de autenticación:", getAuthToken());
@@ -20,42 +20,43 @@ export const login = async (credentials) => {
 
 //Borrar
 /*
-export const getAllAdmin = async (setAdmins) => {
+export const getAllSubjects = async (setSubjects) => {
     try {
         const token = getAuthToken();
         if (!token) {
             console.log("No hay token de autenticación");
-            setAdmins([]);
+            setSubjects([]);
             return;
         }
 
-        const response = await axios.get(`${adminURL}/getAll`, {
+        const response = await axios.get(`${subjectURL}/active`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
-        setAdmins(response.data);
+        setSubjects(response.data);
     } catch (error) {
-        console.error("Error al obtener administradores:", error);
-        setAdmins([]);
+        console.error("Error al obtener materias:", error);
+        setSubjects([]);
     }
 };
 */
-export const getAdminsPaginated = async (page = 0, size = 10, setAdmins, setPagination) => {
+
+export const getSubjectsPaginated = async (page = 0, size = 10, setSubjects, setPagination) => {
     try {
         const token = getAuthToken();
         if (!token) {
             console.log("No hay token de autenticación");
-            setAdmins([]);
+            setSubjects([]),
             setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
             return;
         }
 
-        const response = await axios.get(`${adminURL}/`, {
+        const response = await axios.get(`${subjectURL}/`, {
             params: { page, size },
             headers: { "Authorization": `Bearer ${token}` }
         });
 
-        const admins = response.data.content || [];
-        setAdmins(admins);
+        const subjects = response.data.content || [];
+        setSubjects(subjects);
 
         const pagination = {
             totalPages: response.data.totalPages,
@@ -68,54 +69,53 @@ export const getAdminsPaginated = async (page = 0, size = 10, setAdmins, setPagi
         };
         setPagination(pagination);
 
-    } catch (error) {
-        console.error("Error al obtener administradores paginados:", error);
-        setAdmins([]);
-        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+    } catch (error){
+        console.log("Error al obtener las materias paginadas:", error);
+        setSubjects([]);
+        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0});
     }
-};
+}
 
-export const addAdmin = async (admin) => {
+export const addSubject = async (subject) => {
     try {
-        const response = await axios.post(`${adminURL}/`, admin, {
+        const response = await axios.post(`${subjectURL}/create`, subject, {
             headers: {
                 "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
-        console.log("Administrador agregado:", response.data);
+        console.log("Materia agregada:", response.data);
     } catch (error) {
-        console.error("Error al agregar administrador:", error);
+        console.error("Error al agregar materia:", error);
     }
 };
 
-export const updateAdmin = async (admin) => {
+export const updateSubject = async (subject) => {
     try {
-        const response = await axios.patch(`${adminURL}/${admin.idAdmin}`, admin, {
+        const response = await axios.patch(`${subjectURL}/${subject.idSubject}`, subject, {
             headers: {
                 "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
-        console.log("Administrador actualizado:", response.data);
+        console.log("Materia actualizada:", response.data);
     } catch (error) {
-        console.error("Error al actualizar administrador:", error);
+        console.error("Error al actualizar materia:", error);
     }
 };
 
-export const deleteAdmin = async (idAdmin) => {
-    console.log("adminId:", idAdmin);
+export const deleteSubject = async (idSubject) => {
+    console.log("subjectId:", idSubject);
 
     try {
-        const response = await axios.delete(`${adminURL}/${idAdmin}`, {
+        const response = await axios.delete(`${subjectURL}/${idSubject}`, {
             headers: {
                 "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
-        console.log("Administrador eliminado:", response.data);
+        console.log("Materia eliminada:", response.data);
     } catch (error) {
-        console.error("Error al eliminar administrador:", error);
+        console.error("Error al eliminar materia:", error);
     }
 };
-
