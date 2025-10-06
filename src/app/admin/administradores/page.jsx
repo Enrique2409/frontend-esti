@@ -8,6 +8,7 @@ import SearchBar from "../components/SearchBar";
 import Swal from "sweetalert2";
 import {
   getAdminsPaginated,
+  searchAdmins,
   addAdmin,
   updateAdmin,
   deleteAdmin,
@@ -32,11 +33,16 @@ export default function PageAdmins() {
   });
 
   useEffect(() => {
-    fetchAdmins(0);
-  }, [pageSize]);
+    fetchAdmins(0, searchTerm);
+  }, [pageSize, searchTerm]);
 
-  const fetchAdmins = async (page) => {
-    await getAdminsPaginated(page, pageSize, setAdmins, setPagination);
+  const fetchAdmins = async (page, keyword = "") => {
+    if (keyword.trim() !== ""){
+      await searchAdmins(keyword, page, pageSize, setAdmins, setPagination);
+    } else {
+      await getAdminsPaginated(page, pageSize, setAdmins, setPagination);
+    }
+    
   };
 
   const handleNextPage = () => {
@@ -131,12 +137,6 @@ export default function PageAdmins() {
     }
   };
 
-  const filteredAdmins = admins.filter((admin) =>
-    `${admin.name} ${admin.lastName}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
-
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -184,7 +184,7 @@ export default function PageAdmins() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAdmins.map((admin) => (
+                  {admins.map((admin) => (
                     <tr
                       key={admin.idAdmin}
                       className="hover:bg-gray-50 transition-colors duration-200"
