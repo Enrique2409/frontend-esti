@@ -75,6 +75,42 @@ export const getAdminsPaginated = async (page = 0, size = 10, setAdmins, setPagi
     }
 };
 
+export const searchAdmins = async (keyword, page = 0, size = 10, setAdmins, setPagination) => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log("No hay token de autenticación");
+            setAdmins([]);
+            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+            return;
+        }
+
+        const response = await axios.get(`${adminURL}/search`, {
+            params: { keyword, page, size },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const admins = response.data.content || [];
+        setAdmins(admins);
+
+        const pagination = {
+            totalPages: response.data.totalPages,
+            totalElements: response.data.totalElements,
+            currentPage: response.data.number,
+            pageSize: response.data.size,
+            numberOfElements: response.data.numberOfElements,
+            first: response.data.first,
+            last: response.data.last
+        };
+        setPagination(pagination);
+
+    } catch (error) {
+        console.error("Error al buscar administradores:", error);
+        setAdmins([]);
+        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+    }
+};
+
 export const addAdmin = async (admin) => {
     try {
         const response = await axios.post(`${adminURL}/`, admin, {

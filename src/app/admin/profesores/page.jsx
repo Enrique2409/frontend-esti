@@ -8,6 +8,7 @@ import SearchBar from "../components/SearchBar";
 import Swal from "sweetalert2";
 import {
   getTeachersPaginated,
+  searchTeachers,
   addTeacher,
   updateTeacher,
   deleteTeacher,
@@ -32,11 +33,15 @@ export default function PageTeachers() {
   });
 
   useEffect(() => {
-    fetchTeachers(0);
-  }, [pageSize]);
+    fetchTeachers(0, searchTerm);
+  }, [pageSize, searchTerm]);
 
-  const fetchTeachers = async (page) => {
-    await getTeachersPaginated(page, pageSize, setTeachers, setPagination);
+  const fetchTeachers = async (page, keyword = "") => {
+    if (keyword.trim() !== ""){
+      await searchTeachers(keyword, page, pageSize, setTeachers, setPagination);
+    } else {
+      await getTeachersPaginated(page, pageSize, setTeachers, setPagination);
+    }
   };
 
   const handleNextPage = () => {
@@ -130,13 +135,6 @@ export default function PageTeachers() {
       }
     }
   };
-
-  const filteredTeachers = teachers.filter((teacher) =>
-    `${teacher.name} ${teacher.lastName} ${teacher.email}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
-
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -179,7 +177,7 @@ export default function PageTeachers() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredTeachers.map((teacher) => (
+                  {teachers.map((teacher) => (
                     <tr
                       key={teacher.idTeacher}
                       className="hover:bg-gray-50 transition-colors duration-200"
