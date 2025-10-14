@@ -5,44 +5,103 @@ import { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
-import Swal from "sweetalert2";
-import {
-  getTeachersPaginated,
-  searchTeachers,
-  addTeacher,
-  updateTeacher,
-  deleteTeacher,
-} from "@/app/Service/TeacherService";
+import Swal from 'sweetalert2';
+import FormField from "../components/FormField";
+import { getAllTeachersAsAdmin, addTeacher, updateTeacher, deleteTeacher } from "@/app/Service/TeacherService";
+import "../../Styles/professors.css";
 
-export default function PageTeachers() {
-  const [teachers, setTeachers] = useState([]);
-  const [pagination, setPagination] = useState({
-    totalPages: 0,
-    totalElements: 0,
-    currentPage: 0,
-  });
-  const [pageSize, setPageSize] = useState(10);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [formData, setFormData] = useState({
-    idTeacher: "",
-    name: "",
-    lastName: "",
-    phoneNumber: "",
-    email: "",
-  });
+export default function PageProfessors() {
+    const [teachers, setTeachers] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isAuth, setIsAuth] = useState(false);
+    const [formData, setFormData] = useState({
+        idTeacher: "",
+        name: "",
+        lastName: "",
+        phoneNumber: "",
+        email: "",
+        password: "",
+        role: "TEACHER"
+    });
 
-  useEffect(() => {
-    fetchTeachers(0, searchTerm);
-  }, [pageSize, searchTerm]);
+    const [formErrors, setFormErrors] = useState({
+        name: "",
+        lastName: "",
+        phoneNumber: "",
+        email: "",
+        password: "",
+    });
 
-  const fetchTeachers = async (page, keyword = "") => {
-    if (keyword.trim() !== ""){
-      await searchTeachers(keyword, page, pageSize, setTeachers, setPagination);
-    } else {
-      await getTeachersPaginated(page, pageSize, setTeachers, setPagination);
-    }
-  };
+    const validateField = (name, value) => {
+        let error = "";
+
+        switch (name) {
+            case "name":
+                if (!value.trim()) error = "El nombre es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+
+            case "lastName":
+                if (!value.trim()) error = "El apellido es requerido";
+                break;
+
+            case "phoneNumber":
+                if (!value.trim()) error = "El teléfono es requerido";
+                else if (!/^\d{10}$/.test(value)) error = "Debe tener 10 dígitos";
+                break;
+
+            case "email":
+                if (!value.trim()) error = "El correo es requerido";
+                else if (!/\S+@\S+\.\S+/.test(value)) error = "Formato inválido";
+                break;
+
+            case "password":
+                if (!formData.idAdmin && !value.trim()) error = "La contraseña es requerida";
+                else if (value && value.length < 6) error = "Debe tener al menos 6 caracteres";
+                break;
+            default:
+                break;
+        }
+
+        setFormErrors(prev => ({ ...prev, [name]: error }));
+    };
+
+    useEffect(() => {
+        checkAuthentication();
+    }, []);
+
+
+    const checkAuthentication = () => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            setIsAuth(true);
+            fetchTeachers();
+        } else {
+            setIsAuth(false);
+        }
+    };
+
+    const fetchTeachers = async () => {
+        await getAllTeachersAsAdmin(setTeachers);
+    };
+
+    const handleOpenModal = (teacher = null) => {
+        if (teacher) {
+            setFormData({
+                idTeacher: teacher.idTeacher,
+                name: teacher.name,
+                lastName: teacher.lastName,
+                phoneNumber: teacher.phoneNumber,
+                email: teacher.email,
+                password: "",
+                role: teacher.role,
+            });
+        } else {
+            resetForm();
+        }
+        setIsModalOpen(true);
+    };
 
   const handleNextPage = () => {
     if (pagination.currentPage + 1 < pagination.totalPages) {
@@ -56,18 +115,17 @@ export default function PageTeachers() {
     }
   };
 
-  const handlePageSizeChange = (e) => {
-    setPageSize(Number(e.target.value));
-  };
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        validateField(name, value);
+    };
 
-  const handleOpenModal = (teacher = null) => {
-    if (teacher) {
-      setFormData({ ...teacher });
-    } else {
-      resetForm();
-    }
-    setIsModalOpen(true);
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
   const handleCloseModal = () => {
     resetForm();
@@ -212,12 +270,82 @@ export default function PageTeachers() {
                             Eliminar
                           </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </div>
+                </div>
+            </main>
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                title={formData.idTeacher ? "Editar profesor" : "Nuevo profesor"}
+            >
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
+                        <FormField
+                            type="text"
+                            name="name"
+                            id="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            error={formErrors.name}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellido</label>
+                        <FormField
+                            type="text"
+                            name="lastName"
+                            id="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            error={formErrors.lastName}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Teléfono</label>
+                        <FormField
+                            type="text"
+                            name="phoneNumber"
+                            id="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handleChange}
+                            error={formErrors.phoneNumber}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo electrónico</label>
+                        <FormField
+                            type="email"
+                            name="email"
+                            id="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            error={formErrors.email}
+                            required
+                            
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            Contraseña {formData.idTeacher ? "(opcional al editar)" : ""}
+                        </label>
+                        <FormField
+                            type="password"
+                            name="password"
+                            id="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            error={formErrors.password}
+                            required={!formData.idTeacher}
+                            
+                        />
+                    </div>
+
+                    <input type="hidden" name="role" value="TEACHER" />
 
             <div className="flex justify-between items-center mt-4">
               <button
