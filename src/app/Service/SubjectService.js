@@ -18,6 +18,8 @@ export const login = async (credentials) => {
     }
 };
 
+//Borrar
+/*
 export const getAllSubjects = async (setSubjects) => {
     try {
         const token = getAuthToken();
@@ -36,6 +38,43 @@ export const getAllSubjects = async (setSubjects) => {
         setSubjects([]);
     }
 };
+*/
+
+export const getSubjectsPaginated = async (page = 0, size = 10, setSubjects, setPagination) => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log("No hay token de autenticación");
+            setSubjects([]),
+            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+            return;
+        }
+
+        const response = await axios.get(`${subjectURL}/`, {
+            params: { page, size },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const subjects = response.data.content || [];
+        setSubjects(subjects);
+
+        const pagination = {
+            totalPages: response.data.totalPages,
+            totalElements: response.data.totalElements,
+            currentPage: response.data.number,
+            pageSize: response.data.size,
+            numberOfElements: response.data.numberOfElements,
+            first: response.data.first,
+            last: response.data.last
+        };
+        setPagination(pagination);
+
+    } catch (error){
+        console.log("Error al obtener las materias paginadas:", error);
+        setSubjects([]);
+        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0});
+    }
+}
 
 export const addSubject = async (subject) => {
     try {

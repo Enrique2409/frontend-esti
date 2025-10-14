@@ -5,11 +5,11 @@ import { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
-import "../../Styles/admin.css";
 import Swal from "sweetalert2";
 import FormField from "../components/FormField";
 import {
-  getAllStudents,
+  getStudentsPaginated,
+  searchStudents,
   createStudent,
   updateStudent,
   deleteStudent,
@@ -17,6 +17,12 @@ import {
 
 export default function PageStudents() {
   const [students, setStudents] = useState([]);
+  const [pagination, setPagination] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+  });
+  const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
@@ -75,11 +81,31 @@ export default function PageStudents() {
   };
 
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    fetchStudents(0, searchTerm);
+  }, [pageSize, searchTerm]);
 
-  const fetchStudents = async () => {
-    await getAllStudents(setStudents);
+  const fetchStudents = async (page, keyword = "") => {
+    if (keyword.trim() !== "") {
+      await searchStudents(keyword, page, pageSize, setStudents, setPagination);
+    } else {
+      await getStudentsPaginated(page, pageSize, setStudents, setPagination);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.currentPage + 1 < pagination.totalPages) {
+      fetchStudents(pagination.currentPage + 1, searchTerm);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pagination.currentPage > 0) {
+      fetchStudents(pagination.currentPage - 1, searchTerm);
+    }
+  };
+
+  const handlePageSizeChange = (e) => {
+    setPageSize(Number(e.target.value));
   };
 
   const handleOpenModal = (student = null) => {
@@ -129,7 +155,7 @@ export default function PageStudents() {
       } else {
         await createStudent(formToSend);
       }
-      await fetchStudents();
+      await fetchStudents(pagination.currentPage, searchTerm);
       handleCloseModal();
       Swal.fire("Éxito", "Estudiante guardado correctamente", "success");
     } catch (error) {
@@ -153,7 +179,7 @@ export default function PageStudents() {
     if (result.isConfirmed) {
       try {
         await deleteStudent(idStudent);
-        await fetchStudents();
+        await fetchStudents(pagination.currentPage, searchTerm);
         Swal.fire("Eliminado", "El estudiante ha sido eliminado.", "success");
       } catch (error) {
         console.error("Error deleting student:", error);
@@ -161,12 +187,6 @@ export default function PageStudents() {
       }
     }
   };
-
-  const filteredStudents = students.filter((student) =>
-    `${student.name} ${student.lastNamePaternal} ${student.lastNameMaternal}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -177,9 +197,29 @@ export default function PageStudents() {
           onAdd={() => handleOpenModal()}
           buttonLabel="Nuevo Estudiante"
         />
+
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="p-6">
+            {/* Barra de búsqueda que dispara la búsqueda en cada cambio */}
             <SearchBar onSearch={setSearchTerm} />
+
+            {/* Selector de tamaño de página */}
+            <div className="mb-4">
+              <label className="mr-2 font-medium text-gray-700">
+                Registros por página:
+              </label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="border border-gray-300 rounded-md px-2 py-1"
+              >
+                <option value={1}>1</option>
+                <option value={10}>10</option>
+                <option value={30}>30</option>
+              </select>
+            </div>
+
+            {/* Tabla */}
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -204,7 +244,7 @@ export default function PageStudents() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStudents.map((student) => (
+                  {students.map((student) => (
                     <tr
                       key={student.idStudent}
                       className="hover:bg-gray-50 transition-colors duration-200"
@@ -253,10 +293,32 @@ export default function PageStudents() {
                 </tbody>
               </table>
             </div>
+
+            {/* Paginación */}
+            <div className="flex justify-between items-center mt-4">
+              <button
+                onClick={handlePrevPage}
+                disabled={pagination.currentPage === 0}
+                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50 text-white"
+              >
+                Anterior
+              </button>
+              <span>
+                Página {pagination.currentPage + 1} de {pagination.totalPages}
+              </span>
+              <button
+                onClick={handleNextPage}
+                disabled={pagination.currentPage + 1 >= pagination.totalPages}
+                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50 text-white"
+              >
+                Siguiente
+              </button>
+            </div>
           </div>
         </div>
       </main>
 
+      {/* Modal para crear/editar */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
