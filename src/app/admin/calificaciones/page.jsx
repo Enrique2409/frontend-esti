@@ -3,13 +3,15 @@
 import Swal from 'sweetalert2';
 import { getAllCardex, addCardex, updateCardex, deleteCardex } from "@/app/Service/CardexService";
 import { getAllGroups } from '@/app/Service/GroupService';
-import { getAllStudents } from "@/app/Service/StudentService";
+import { getAllStudents, getStudentsByGroup } from "@/app/Service/StudentService";
 import { getAllSubjects } from "@/app/Service/SubjectService";
 import { getAllTeachersAsAdmin } from "@/app/Service/TeacherService";
+import { getTSGByGroup } from '@/app/Service/TSGService';
 import Navbar from "../components/navbar";
 import TableHeader from "../components/TableHeader";
 import { useState, useEffect } from "react";
 import SearchBar from "../components/SearchBar";
+import FormField from '../components/FormField';
 import Modal from "../components/Modal";
 
 export default function PageCalificaciones() {
@@ -17,8 +19,29 @@ export default function PageCalificaciones() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [isAuth, setIsAuth] = useState(false);
+
+    const [groups, setGroups] = useState([]);
+    const [students, setStudents] = useState([]);
+    const [subjects, setSubjects] = useState([]);
+    const [teachers, setTeachers] = useState([]);
+    const [tsgList, setTsgList] = useState([]);
+    const [filteredSubjects, setFilteredSubjects] = useState([]);
+    const [filteredTeachers, setFilteredTeachers] = useState([]);
+    const [isEditing, setIsEditing] = useState(false);
+
     const [formData, setFormData] = useState({
         idCardex: "",
+        groupId: "",
+        teacherId: "",
+        studentId: "",
+        subjectId: "",
+        firstPartial: "",
+        secondPartial: "",
+        thirdPartial: "",
+        finalGrade: ""
+    });
+
+    const [formErrors, setFormErrors] = useState({
         groupName: "",
         grade: "",
         period: "",
@@ -34,47 +57,162 @@ export default function PageCalificaciones() {
         finalGrade: ""
     });
 
+    const validateField = (name, value) => {
+        let error = "";
+
+        switch (name) {
+            case "groupName":
+                if (!value.trim()) error = "El nombre del grupo es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+            case "grade":
+                if (!value || isNaN(value) || value < 1 || value > 12) {
+                    error = "El grado debe ser un número entre 1 y 12";
+                }
+                break;
+            case "period":
+                if (!value.trim()) error = "El periodo es requerido";
+                break;
+            case "teacherName":
+                if (!value.trim()) error = "El nombre del profesor es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+            case "teacherLastName":
+                if (!value.trim()) error = "El apellido del profesor es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+            case "studentName":
+                if (!value.trim()) error = "El nombre del estudiante es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+            case "studentLastNamePaternal":
+                if (!value.trim()) error = "El apellido paterno del estudiante es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+            case "studentLastNameMaternal":
+                if (!value.trim()) error = "El apellido materno del estudiante es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+            case "subjectName":
+                if (!value.trim()) error = "El nombre de la materia es requerido";
+                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
+                break;
+            case "firstPartial":
+            case "secondPartial":
+            case "thirdPartial":
+                if (!value || isNaN(value) || value < 0 || value > 100) {
+                    error = "La calificación debe ser un número entre 0 y 100";
+                }
+                break;
+            case "finalGrade":
+                if (!value || isNaN(value) || value < 0 || value > 100) {
+                    error = "La calificación final debe ser un número entre 0 y 100";
+                }
+                break;
+            default:
+                break;
+        }
+        setFormErrors(prev => ({
+            ...prev,
+            [name]: error
+        }));
+    };
+
     useEffect(() => {
         checkAuthentication();
     }, []);
 
-    const validateForm = () => {
-        const { groupName, grade, period, teacherName, teacherLastName, studentName, studentLastNamePaternal, studentLastNameMaternal, subjectName, firstPartial, secondPartial, thirdPartial } = formData;
-        if (!groupName || !grade || !period || !teacherName || !teacherLastName || !studentName || !studentLastNamePaternal || !studentLastNameMaternal || !subjectName || !firstPartial || !secondPartial || !thirdPartial) {
-            Swal.fire("Error", "Todos los campos son obligatorios", "error");
-            return false;
-        }
-        return true;
-
-    };
 
     const checkAuthentication = () => {
         const token = localStorage.getItem("token");
         if (token) {
             setIsAuth(true);
             fetchCardex();
+            fetchGroups();
+            fetchStudents();
+            fetchSubjects();
+            fetchTeachers();
+            fetchTSGByGroup();
         } else {
             setIsAuth(false);
         }
     };
 
+    const fetchTSGByGroup = async (groupId) => {
+        if (!groupId) {
+            setTsgList([]);
+            return;
+        }
+        try {
+            const data = await getTSGByGroup(groupId);
+            setTsgList(data);
+        } catch (error) {
+            console.error("Error al obtener TSG por grupo:", error);
+            setTsgList([]);
+        }
+    };
+
+
     const fetchCardex = async () => {
         await getAllCardex(setGrades);
     };
 
-    const handleOpenModal = (grade = null) => {
+    const fetchGroups = async () => {
+        await getAllGroups(setGroups);
+    };
+
+    const fetchStudents = async () => {
+        await getAllStudents(setStudents);
+    };
+
+    const fetchSubjects = async () => {
+        await getAllSubjects(setSubjects);
+    };
+
+    const fetchTeachers = async () => {
+        await getAllTeachersAsAdmin(setTeachers);
+    };
+
+    const fetchStudentsByGroup = async (groupId) => {
+        if (!groupId) {
+            fetchStudents();
+            return;
+        }
+        await getStudentsByGroup(groupId, setStudents);
+    };
+
+    const handleOpenModal = async (grade = null) => {
         if (grade) {
+            // Obtener TSG directamente
+            const tsgData = await getTSGByGroup(grade.idGroup);
+            setTsgList(tsgData);
+
+            // Filtrar materias disponibles
+            const subjectsForGroup = [...new Set(tsgData.map(tsg => tsg.idSubject))].map(idSubject => {
+                const subject = tsgData.find(t => t.idSubject === idSubject);
+                return {
+                    idSubject,
+                    subjectName: subject.subjectName
+                };
+            });
+            setFilteredSubjects(subjectsForGroup);
+
+            // Filtrar profesores según la materia
+            const teachersForSubject = tsgData
+                .filter(tsg => tsg.idSubject === grade.idSubject)
+                .map(tsg => ({
+                    idTeacher: tsg.idTeacher,
+                    teacherName: tsg.teacherName,
+                    teacherLastName: tsg.teacherLastName
+                }));
+            setFilteredTeachers(teachersForSubject);
+
             setFormData({
                 idCardex: grade.idCardex,
-                groupName: grade.groupName,
-                grade: grade.grade,
-                period: grade.period,
-                teacherName: grade.teacherName,
-                teacherLastName: grade.teacherLastName,
-                studentName: grade.studentName,
-                studentLastNamePaternal: grade.studentLastNamePaternal,
-                studentLastNameMaternal: grade.studentLastNameMaternal,
-                subjectName: grade.subjectName,
+                groupId: grade.idGroup,
+                teacherId: grade.idTeacher,
+                studentId: grade.idStudent,
+                subjectId: grade.idSubject,
                 firstPartial: grade.firstPartial,
                 secondPartial: grade.secondPartial,
                 thirdPartial: grade.thirdPartial,
@@ -83,8 +221,10 @@ export default function PageCalificaciones() {
         } else {
             resetForm();
         }
+
         setIsModalOpen(true);
     };
+
 
     const handleCloseModal = () => {
         resetForm();
@@ -94,15 +234,10 @@ export default function PageCalificaciones() {
     const resetForm = () => {
         setFormData({
             idCardex: "",
-            groupName: "",
-            grade: "",
-            period: "",
-            teacherName: "",
-            teacherLastName: "",
-            studentName: "",
-            studentLastNamePaternal: "",
-            studentLastNameMaternal: "",
-            subjectName: "",
+            groupId: "",
+            teacherId: "",
+            studentId: "",
+            subjectId: "",
             firstPartial: "",
             secondPartial: "",
             thirdPartial: "",
@@ -110,51 +245,77 @@ export default function PageCalificaciones() {
         });
     };
 
+    const handleGroupChange = async (e) => {
+        const groupId = e.target.value;
+        handleChange(e);
+
+        if (groupId) {
+            const tsgData = await getTSGByGroup(groupId);
+            setTsgList(tsgData);
+            fetchStudentsByGroup(groupId);
+        } else {
+            setTsgList([]);
+            setFilteredSubjects([]);
+            setFilteredTeachers([]);
+            setStudents([]);
+        }
+    };
+
+    const handleSubjectChange = (e) => {
+        const subjectId = parseInt(e.target.value); // Asegurarse de que sea número
+        handleChange(e);
+
+        if (subjectId) {
+            const teachersForSubject = tsgList
+                .filter(tsg => tsg.idSubject === subjectId)
+                .map(tsg => ({
+                    idTeacher: tsg.idTeacher,
+                    teacherName: tsg.teacherName,
+                    teacherLastName: tsg.teacherLastName
+                }));
+
+            setFilteredTeachers(teachersForSubject);
+        } else {
+            setFilteredTeachers([]);
+        }
+    };
+
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+        validateField(name, value);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validateForm()) return;
 
         try {
-            const payload = {
-                idCardex: formData.idCardex,
-                Group: {
-                    groupName: formData.groupName,
-                    grade: formData.grade,
-                    period: formData.period
-                },
-                Teacher: {
-                    name: formData.teacherName,
-                    lastName: formData.teacherLastName
-                },
-                Student: {
-                    name: formData.studentName,
-                    lastNamePaternal: formData.studentLastNamePaternal,
-                    lastNameMaternal: formData.studentLastNameMaternal
-                },
-                Subject: {
-                    name: formData.subjectName
-                },
-                firstPartial: formData.firstPartial,
-                secondPartial: formData.secondPartial,
-                thirdPartial: formData.thirdPartial,
-                finalGrade: formData.finalGrade
-
-            };
-
-            if (formData.idCardex) {
-                await updateCardex(payload);
-                Swal.fire("Calificación actualizada con éxito", "", "success");
-            } else {
+            if (!formData.idCardex) {
+                const payload = {
+                    Group: { idGroup: formData.groupId },
+                    Student: { idStudent: formData.studentId },
+                    TeacherSubjectGroup: { idTeacherSubjectGroup: formData.teacherId },
+                    firstPartial: formData.firstPartial,
+                    secondPartial: formData.secondPartial,
+                    thirdPartial: formData.thirdPartial,
+                    finalGrade: formData.finalGrade
+                };
                 await addCardex(payload);
                 Swal.fire("Calificación agregada con éxito", "", "success");
+            } else {
+                const payload = {
+                    firstPartial: formData.firstPartial,
+                    secondPartial: formData.secondPartial,
+                    thirdPartial: formData.thirdPartial,
+                    finalGrade: formData.finalGrade
+                };
+                await updateCardex({ ...payload, idCardex: formData.idCardex });
+                Swal.fire("Calificación actualizada con éxito", "", "success");
+                console.log("Payload de actualización:", { ...payload, idCardex: formData.idCardex });
             }
 
             await fetchCardex();
@@ -164,6 +325,8 @@ export default function PageCalificaciones() {
             Swal.fire("Error al guardar la calificación", "", "error");
         }
     };
+
+
 
     const handleDelete = async (idCardex) => {
         const result = await Swal.fire({
@@ -313,108 +476,142 @@ export default function PageCalificaciones() {
             <Modal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
-                title={formData.id ? "Editar Calificación" : "Nueva Calificación"}
+                title={formData.idCardex ? "Editar Calificación" : "Nueva Calificación"}
             >
                 <div className="max-h-[70vh] overflow-y-auto pr-2">
                     <form onSubmit={handleSubmit} className="space-y-4">
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Grupo</label>
-                            <input
-                                type="text"
-                                name="Group.name"
-                                value={formData.Group?.groupName || ''}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            />
+                            <select
+                                name="groupId"
+                                value={formData.groupId || ""}
+                                onChange={handleGroupChange}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
+                                required
+                                disabled={!!formData.idCardex}
+
+                            >
+                                <option value="">Seleccione un grupo</option>
+                                {groups.map(group => (
+                                    <option key={group.idGroup} value={group.idGroup}>
+                                        {group.grade}° {group.groupName} - {group.period?.periodName}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Nombre del Profesor</label>
-                            <input
-                                type="text"
-                                name="Teacher.name"
-                                value={formData.Teacher?.teacherName || ''}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Apellido del Profesor</label>
-                            <input
-                                type="text"
-                                name="Teacher.lastName"
-                                value={formData.Teacher?.teacherLastName || ''}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Nombre del Alumno</label>
-                            <input
-                                type="text"
-                                name="Student.name"
-                                value={formData.Student?.studentName || ''}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Apellido del Alumno</label>
-                            <input
-                                type="text"
-                                name="Student.lastName"
-                                value={formData.Student?.studentLastNamePaternal || ''}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            />
-                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Materia</label>
-                            <input
-                                type="text"
-                                name="Subject.name"
-                                value={formData.Subject?.subjectName || ''}
-                                onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            />
+                            <select
+                                name="subjectId"
+                                value={formData.subjectId || ""}
+                                onChange={handleSubjectChange}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
+                                required
+                                disabled={!!formData.idCardex}
+                            >
+                                <option value="">Seleccione una materia</option>
+                                {[...new Set(tsgList.map(tsg => tsg.idSubject))]
+                                    .map((idSubject, index) => {
+                                        const subject = tsgList.find(t => t.idSubject === idSubject);
+                                        if (!subject) return null; // evita undefined
+                                        return (
+                                            <option key={`subject-${idSubject}-${index}`} value={idSubject}>
+                                                {subject.subjectName}
+                                            </option>
+                                        );
+                                    })}
+
+                            </select>
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Profesor</label>
+                            <select
+                                name="teacherId"
+                                value={formData.teacherId || ""}
+                                onChange={handleChange}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
+                                required
+                                disabled={!!formData.idCardex}
+                            >
+                                <option value="">Seleccione un profesor</option>
+                                {[...new Set(tsgList.map(tsg => tsg.idTeacher))]
+                                    .map((idTeacher, index) => {
+                                        const teacher = tsgList.find(t => t.idTeacher === idTeacher);
+                                        if (!teacher) return null; // evita undefined
+                                        return (
+                                            <option key={`teacher-${idTeacher}-${index}`} value={idTeacher}>
+                                                {teacher.teacherName} {teacher.teacherLastName}
+                                            </option>
+                                        );
+                                    })}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Alumno</label>
+                            <select
+                                name="studentId"
+                                value={formData.studentId || ""}
+                                onChange={handleChange}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
+                                required
+                                disabled={!!formData.idCardex} // true si estamos editando
+                            >
+                                <option value="">Seleccione un alumno</option>
+                                {students.map(student => (
+                                    <option key={student.idStudent} value={student.idStudent}>
+                                        {student.firstName} {student.lastNamePaternal} {student.lastNameMaternal}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Primer Parcial</label>
-                            <input
+                            <FormField
                                 type="number"
                                 name="firstPartial"
                                 value={formData.firstPartial}
                                 onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                error={formErrors.firstPartial}
+                                required
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Segundo Parcial</label>
-                            <input
+                            <FormField
                                 type="number"
                                 name="secondPartial"
                                 value={formData.secondPartial}
                                 onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                error={formErrors.secondPartial}
+                                required
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Tercer Parcial</label>
-                            <input
+                            <FormField
                                 type="number"
                                 name="thirdPartial"
                                 value={formData.thirdPartial}
                                 onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                error={formErrors.thirdPartial}
+                                required
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Calificación Final</label>
-                            <input
+                            <FormField
                                 type="number"
                                 name="finalGrade"
                                 value={formData.finalGrade}
                                 onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                error={formErrors.finalGrade}
+                                required
                             />
                         </div>
                         <div className="flex justify-end space-x-3">
@@ -430,6 +627,7 @@ export default function PageCalificaciones() {
                                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                             >
                                 {formData.id ? "Actualizar" : "Crear"}
+                                {/*isEditing ? "Actualizar Calificación" : "Crear Calificación"}*/}
                             </button>
                         </div>
                     </form>

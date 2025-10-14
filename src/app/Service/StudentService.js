@@ -24,6 +24,26 @@ export const getAllStudents = async (setStudents) => {
     }
 };
 
+export const getStudentsByGroup = async (groupId, setStudents) => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      console.log("No hay token de autenticación");
+      setStudents([]);
+      return;
+    }
+
+    const response = await axios.get(`${studentURL}/group/${groupId}`, {
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+
+    setStudents(response.data);
+  } catch (error) {
+    console.error("Error al obtener alumnos por grupo:", error);
+    setStudents([]);
+  }
+};
+
 export const createStudent = async (student) => {
     try {
         const response = await axios.post(`${studentURL}/create-student`, student, {
