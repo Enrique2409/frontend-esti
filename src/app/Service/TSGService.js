@@ -15,6 +15,7 @@ export const getTSGByGroup = async (groupId) => {
         const response = await axios.get(`${baseURL}/by-group/${groupId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
+        console.log("TSG data:", response.data);
 
         return response.data;
     } catch (error) {
