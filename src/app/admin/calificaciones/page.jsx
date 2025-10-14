@@ -188,13 +188,14 @@ export default function PageCalificaciones() {
             setTsgList(tsgData);
 
             // Filtrar materias disponibles
-            const subjectsForGroup = [...new Set(tsgData.map(tsg => tsg.idSubject))].map(idSubject => {
-                const subject = tsgData.find(t => t.idSubject === idSubject);
+            const subjectsForGroup = [...new Set(tsgData.map(tsg => tsg.subjectId))].map(subjectId => {
+                const subject = tsgData.find(t => t.subjectId === subjectId);
                 return {
-                    idSubject,
+                    idSubject: subject.subjectId,
                     subjectName: subject.subjectName
                 };
             });
+            console.log("materias", subjectsForGroup);
             setFilteredSubjects(subjectsForGroup);
 
             // Filtrar profesores según la materia
@@ -205,7 +206,10 @@ export default function PageCalificaciones() {
                     teacherName: tsg.teacherName,
                     teacherLastName: tsg.teacherLastName
                 }));
-            setFilteredTeachers(teachersForSubject);
+            setFilteredTeachers(tsgData);
+            console.log("Filtered Teachers:", tsgData);
+
+
 
             setFormData({
                 idCardex: grade.idCardex,
