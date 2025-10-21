@@ -37,6 +37,77 @@ export const getAllCardex = async (setCardex) => {
     }
 };
 
+export const getCardexPaginated = async (page = 0, size = 0, setCardex, setPagination) => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log("No hay token de autenticación");
+            setCardex([]);
+            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0});
+            return;
+        }
+
+        const response = await axios.get(`${cardexURL}/`, {
+            params: { page, size },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const cardex = response.data.content || [];
+        setCardex(cardex);
+
+        const pagination = {
+            totalPages: response.data.totalPages,
+            totalElements: response.data.totalElements,
+            currentPage: response.data.number,
+            pageSize: response.data.size,
+            numberOfElements: response.data.numberOfElements,
+            first: response.data.first,
+            last: response.data.last
+        };
+        setPagination(pagination);
+
+    } catch (error) {
+        console.error("Error al obtener el cardex paginado: ", error);
+        setCardex([]);
+        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0});
+    }
+};
+
+export const searchCardex = async (keyword, page = 0, size = 10, setCardex, setPagination) => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log("No hay token de autenticación");
+            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+            return;
+        }
+
+        const response = await axios.get(`${cardexURL}/search`, {
+            params: { keyword, page, size },
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        const cardex = response.data.content || [];
+        setCardex(cardex);
+
+        const pagination = {
+            totalPages: response.data.totalPages,
+            totalElements: response.data.totalElements,
+            currentPage: response.data.number,
+            pageSize: response.data.size,
+            numberOfElements: response.data.numberOfElements,
+            first: response.data.first,
+            last: response.data.last
+        };
+        setPagination(pagination);
+
+    } catch (error) {
+        console.error("Error al buscar Cardex: ", error);
+        setStudents([]);
+        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+    }
+};
+
 export const addCardex = async (cardex) => {
     try {
         const response = await axios.post(`${cardexURL}/create-cardex`, cardex, {

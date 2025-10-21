@@ -73,7 +73,7 @@ export const searchStudents = async (keyword, page = 0, size = 10, setStudents, 
             return;
         }
 
-        const response = await axios.get(`${studentURL}/students/search`, {
+        const response = await axios.get(`${studentURL}/search`, {
             params: { keyword, page, size },
             headers: { "Authorization": `Bearer ${token}` }
         });
