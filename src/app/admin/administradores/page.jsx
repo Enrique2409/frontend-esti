@@ -1,14 +1,18 @@
 "use client";
-//fixes
+
 import Navbar from "../components/navbar";
 import { useState, useEffect } from "react";
 import Modal from "../components/Modal";
 import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
-import "../../Styles/admin.css";
-import Swal from 'sweetalert2';
-import FormField from "../components/FormField";
-import { getAllAdmin, addAdmin, updateAdmin, deleteAdmin, login } from "@/app/Service/AdminService";
+import Swal from "sweetalert2";
+import {
+  getAdminsPaginated,
+  searchAdmins,
+  addAdmin,
+  updateAdmin,
+  deleteAdmin,
+} from "@/app/Service/AdminService";
 
 export default function PageAdmins() {
   const [admins, setAdmins] = useState([]);
@@ -28,52 +32,9 @@ export default function PageAdmins() {
     email: "",
   });
 
-    const [formErrors, setFormErrors] = useState({
-        name: "",
-        lastName: "",
-        phoneNumber: "",
-        email: "",
-        password: "",
-    });
-
-
-    const validateField = (name, value) => {
-        let error = "";
-
-        switch (name) {
-            case "name":
-                if (!value.trim()) error = "El nombre es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-
-            case "lastName":
-                if (!value.trim()) error = "El apellido es requerido";
-                break;
-
-            case "phoneNumber":
-                if (!value.trim()) error = "El teléfono es requerido";
-                else if (!/^\d{10}$/.test(value)) error = "Debe tener 10 dígitos";
-                break;
-
-            case "email":
-                if (!value.trim()) error = "El correo es requerido";
-                else if (!/\S+@\S+\.\S+/.test(value)) error = "Formato inválido";
-                break;
-
-            case "password":
-                if (!formData.idAdmin && !value.trim()) error = "La contraseña es requerida";
-                else if (value && value.length < 6) error = "Debe tener al menos 6 caracteres";
-                break;
-            default:
-                break;
-        }
-
-        setFormErrors(prev => ({ ...prev, [name]: error }));
-    };
-
-    useEffect(() => {
-        checkAuthentication();
-    }, []);
+  useEffect(() => {
+    fetchAdmins(0, searchTerm);
+  }, [pageSize, searchTerm]);
 
   const fetchAdmins = async (page, keyword = "") => {
     if (keyword.trim() !== ""){
@@ -109,24 +70,20 @@ export default function PageAdmins() {
     setIsModalOpen(true);
   };
 
-    {/*const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };*/}
+  const handleCloseModal = () => {
+    resetForm();
+    setIsModalOpen(false);
+  };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        validateField(name, value);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        try {
-            const dataToSend = { ...formData };
+  const resetForm = () => {
+    setFormData({
+      idAdmin: "",
+      name: "",
+      lastName: "",
+      phoneNumber: "",
+      email: "",
+    });
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -194,79 +151,21 @@ export default function PageAdmins() {
           <div className="p-6">
             <SearchBar onSearch={setSearchTerm} />
 
-            <Modal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                title={formData.idAdmin ? "Editar administrador" : "Nuevo administrador"}
-            >
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nombre</label>
-                        <FormField
-                            type="text"
-                            name="name"
-                            id="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            error={formErrors.name}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Apellido</label>
-                        <FormField
-                            type="text"
-                            name="lastName"
-                            id="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            error={formErrors.lastName}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">Teléfono</label>
-                        <FormField
-                            type="text"
-                            name="phoneNumber"
-                            id="phoneNumber"
-                            value={formData.phoneNumber}
-                            onChange={(e) => {
-                                const value = e.target.value.replace(/\D/g, "");
-                                if (value.length <= 10) {
-                                    setFormData((prev) => ({ ...prev, phoneNumber: value }));
-                                }
-                            }}
-                            error={formErrors.phoneNumber}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo electrónico</label>
-                        <FormField
-                            type="email"
-                            name="email"
-                            id="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            error={formErrors.email}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="password" className="password block text-sm font-medium text-gray-700">
-                            Contraseña {formData.idAdmin ? "(opcional al editar)" : ""}
-                        </label>
-                        <FormField
-                            type="password"
-                            name="password"
-                            id="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            error={formErrors.password}
-                            required={!formData.idAdmin}
-                        />
-                    </div>
+            {/* Selector de tamaño de página */}
+            <div className="mb-4">
+              <label className="mr-2 font-medium text-gray-700">
+                Registros por página:
+              </label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="border border-gray-300 rounded-md px-2 py-1"
+              >
+                <option value={1}>1</option>
+                <option value={10}>10</option>
+                <option value={30}>30</option>
+              </select>
+            </div>
 
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
