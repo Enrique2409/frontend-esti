@@ -6,7 +6,6 @@ import Modal from "../components/Modal";
 import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
 import Swal from "sweetalert2";
-import FormField from "../components/FormField";
 import {
   getStudentsPaginated,
   searchStudents,
@@ -35,51 +34,7 @@ export default function PageStudents() {
     phoneNumber: "",
   });
 
-  const [formErrors, setFormErrors] = useState({
-    name: "",
-    lastName: "",
-    phoneNumber: "",
-    email: "",
-    password: "",
-  });
-
-  const validateField = (name, value) => {
-    let error = "";
-
-    switch (name) {
-      case "name":
-        if (!value.trim()) error = "El nombre es requerido";
-        else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-        break;
-
-      case "lastNamePaternal":
-        if (!value.trim()) error = "El apellido paterno es requerido";
-        break;
-
-      case "lastNameMaternal":
-        if (!value.trim()) error = "El apellido materno es requerido";
-        break;
-
-      case "curp":
-        if (!value.trim()) error = "El CURP es requerido";
-        else if (!/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]{2}$/.test(value)) error = "Formato de CURP inválido";
-        break;
-
-      case "birthDate":
-        if (!value.trim()) error = "La fecha de nacimiento es requerida";
-        break;
-
-      case "phoneNumber":
-        if (!value.trim()) error = "El teléfono es requerido";
-        else if (!/^\d{10}$/.test(value)) error = "Debe tener 10 dígitos";
-        break;
-      default:
-        break;
-    }
-
-    setFormErrors(prev => ({ ...prev, [name]: error }));
-  };
-
+  // cargar datos iniciales o búsqueda
   useEffect(() => {
     fetchStudents(0, searchTerm);
   }, [pageSize, searchTerm]);
@@ -135,12 +90,10 @@ export default function PageStudents() {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    validateField(name, value);
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -324,48 +277,49 @@ export default function PageStudents() {
         onClose={handleCloseModal}
         title={formData.idStudent ? "Editar estudiante" : "Nuevo estudiante"}
       >
-        <div className="max-h-[70vh] overflow-y-auto pr-2">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {[
-              { label: "Nombre", name: "name", type: "text" },
-              { label: "Apellido paterno", name: "lastNamePaternal", type: "text" },
-              { label: "Apellido materno", name: "lastNameMaternal", type: "text" },
-              { label: "CURP", name: "curp", type: "text" },
-              { label: "Fecha de nacimiento", name: "birthDate", type: "date" },
-              { label: "Teléfono", name: "phoneNumber", type: "text" },
-            ].map(({ label, name, type }) => (
-              <div key={name}>
-                <label htmlFor={name} className="block text-sm font-medium text-gray-700">
-                  {label}
-                </label>
-                <FormField
-                  error={formErrors[name]}
-                  type={type}
-                  name={name}
-                  id={name}
-                  value={formData[name]}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            ))}
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {[
+            { label: "Nombre", name: "name", type: "text" },
+            { label: "Apellido paterno", name: "lastNamePaternal", type: "text" },
+            { label: "Apellido materno", name: "lastNameMaternal", type: "text" },
+            { label: "CURP", name: "curp", type: "text" },
+            { label: "Fecha de nacimiento", name: "birthDate", type: "date" },
+            { label: "Teléfono", name: "phoneNumber", type: "text" },
+          ].map(({ label, name, type }) => (
+            <div key={name}>
+              <label
+                htmlFor={name}
+                className="block text-sm font-medium text-gray-700"
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                {formData.idStudent ? "Actualizar" : "Crear"}
-              </button>
+                {label}
+              </label>
+              <input
+                type={type}
+                name={name}
+                id={name}
+                value={formData[name]}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              />
             </div>
-          </form>
-        </div>
+          ))}
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              {formData.idStudent ? "Actualizar" : "Crear"}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

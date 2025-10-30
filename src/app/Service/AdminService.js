@@ -18,27 +18,6 @@ export const login = async (credentials) => {
     }
 };
 
-//Borrar
-/*
-export const getAllAdmin = async (setAdmins) => {
-    try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setAdmins([]);
-            return;
-        }
-
-        const response = await axios.get(`${adminURL}/getAll`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        setAdmins(response.data);
-    } catch (error) {
-        console.error("Error al obtener administradores:", error);
-        setAdmins([]);
-    }
-};
-*/
 export const getAdminsPaginated = async (page = 0, size = 10, setAdmins, setPagination) => {
     try {
         const token = getAuthToken();

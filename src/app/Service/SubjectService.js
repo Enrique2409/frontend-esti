@@ -85,8 +85,10 @@ export const addSubject = async (subject) => {
             }
         });
         console.log("Materia agregada:", response.data);
+        return response.data;
     } catch (error) {
         console.error("Error al agregar materia:", error);
+        throw error;
     }
 };
 
