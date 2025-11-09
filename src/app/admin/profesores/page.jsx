@@ -6,6 +6,7 @@ import Modal from "../components/Modal";
 import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
 import Swal from "sweetalert2";
+import TeacherSubjectsModal from "../components/TeacherSubjectsModal";
 import {
   getTeachersPaginated,
   searchTeachers,
@@ -32,12 +33,15 @@ export default function PageTeachers() {
     email: "",
   });
 
+  const [selectedTeacherForSubjects, setSelectedTeacherForSubjects] =
+    useState(null);
+
   useEffect(() => {
     fetchTeachers(0, searchTerm);
   }, [pageSize, searchTerm]);
 
   const fetchTeachers = async (page, keyword = "") => {
-    if (keyword.trim() !== ""){
+    if (keyword.trim() !== "") {
       await searchTeachers(keyword, page, pageSize, setTeachers, setPagination);
     } else {
       await getTeachersPaginated(page, pageSize, setTeachers, setPagination);
@@ -150,7 +154,9 @@ export default function PageTeachers() {
             <SearchBar onSearch={setSearchTerm} />
 
             <div className="mb-4">
-              <label className="mr-2 font-medium text-gray-700">Registros por página:</label>
+              <label className="mr-2 font-medium text-gray-700">
+                Registros por página:
+              </label>
               <select
                 value={pageSize}
                 onChange={handlePageSizeChange}
@@ -166,7 +172,15 @@ export default function PageTeachers() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["ID", "Nombre", "Apellido", "Teléfono", "Email", "Acciones"].map((header) => (
+                    {[
+                      "ID",
+                      "Nombre",
+                      "Apellido",
+                      "Teléfono",
+                      "Email",
+                      "Materias",
+                      "Acciones",
+                    ].map((header) => (
                       <th
                         key={header}
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -198,6 +212,14 @@ export default function PageTeachers() {
                         {teacher.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <button
+                          onClick={() => setSelectedTeacherForSubjects(teacher)}
+                          className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-md text-sm font-medium"
+                        >
+                          Ver Materias
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleOpenModal(teacher)}
@@ -206,7 +228,9 @@ export default function PageTeachers() {
                             Editar
                           </button>
                           <button
-                            onClick={() => handleDeleteTeacher(teacher.idTeacher)}
+                            onClick={() =>
+                              handleDeleteTeacher(teacher.idTeacher)
+                            }
                             className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium transition-colors duration-200"
                           >
                             Eliminar
@@ -255,7 +279,10 @@ export default function PageTeachers() {
             { label: "Email", name: "email", type: "email" },
           ].map(({ label, name, type }) => (
             <div key={name}>
-              <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor={name}
+                className="block text-sm font-medium text-gray-700"
+              >
                 {label}
               </label>
               <input
@@ -286,6 +313,12 @@ export default function PageTeachers() {
           </div>
         </form>
       </Modal>
+      {selectedTeacherForSubjects && (
+        <TeacherSubjectsModal
+          teacher={selectedTeacherForSubjects}
+          onClose={() => setSelectedTeacherForSubjects(null)}
+        />
+      )}
     </div>
   );
 }

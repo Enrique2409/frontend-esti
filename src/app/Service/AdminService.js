@@ -92,6 +92,7 @@ export const searchAdmins = async (keyword, page = 0, size = 10, setAdmins, setP
 
 export const addAdmin = async (admin) => {
     try {
+        console.log(getAuthToken());
         const response = await axios.post(`${adminURL}/`, admin, {
             headers: {
                 "Authorization": `Bearer ${getAuthToken()}`,
