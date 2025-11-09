@@ -1,27 +1,58 @@
+// TeacherSubjectService.js
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/esti/tsg";
+const baseURL = "http://localhost:8080/esti";
+const teacherSubjectURL = `${baseURL}/tsg`;
 
+// Igual que en TeacherService
+const getAuthToken = () => localStorage.getItem("token");
+console.log("Token de autenticación (TSG):", getAuthToken());
+
+const getAuthHeaders = () => ({
+  "Authorization": `Bearer ${getAuthToken()}`,
+  "Content-Type": "application/json",
+});
+
+// Obtener materias/grupos por profesor
 export const getSubjectsByTeacher = async (idTeacher) => {
-  const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
-
-  const response = await axios.get(`${API_URL}/by-teacher/${idTeacher}`, { headers });
-  return response.data;
+  try {
+    const response = await axios.get(
+      `${teacherSubjectURL}/by-teacher/${idTeacher}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener materias del profesor:", error);
+    throw error;
+  }
 };
 
+// Crear relación Teacher-Subject-Group
 export const createTeacherSubject = async (teacherSubjectData) => {
-  const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
-
-  const response = await axios.post(`${API_URL}/create-tsg`, teacherSubjectData, { headers });
-  return response.data;
+  console.log("Payload createTeacherSubject:", teacherSubjectData);
+  try {
+    const response = await axios.post(
+      `${teacherSubjectURL}/create-tsg`,
+      teacherSubjectData,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error al crear teacherSubjectGroup:", error);
+    throw error;
+  }
 };
 
+// Eliminar relación Teacher-Subject-Group
 export const deleteTeacherSubject = async (idTeacherSubject) => {
-  const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
-
-  const response = await axios.delete(`${API_URL}/${idTeacherSubject}`, { headers });
-  return response.data;
+  try {
+    const response = await axios.delete(
+      `${teacherSubjectURL}/${idTeacherSubject}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error al eliminar teacherSubjectGroup:", error);
+    throw error;
+  }
 };
