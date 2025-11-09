@@ -29,16 +29,14 @@ function Navbar() {
       </a>
 
       <nav ref={navRef}>
+
+        
         <a href="#" onClick={(e) => { e.preventDefault(); navigate("/webpage/home"); }} className={isActive("/webpage/home") ? "active" : ""}>
           <i className={`fas fa-home ${isActive("/webpage/home") ? "icon-active" : ""}`}></i> Inicio
         </a>
 
          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} className={isActive("/") ? "active" : ""}>
           <i className={`fas fa-home ${isActive("/") ? "icon-active" : ""}`}></i> Nosotros
-        </a>
-
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} className={isActive("/") ? "active" : ""}>
-          <i className={`fas fa-home ${isActive("/") ? "icon-active" : ""}`}></i> Calendario
         </a>
 
         <a href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} className={isActive("/") ? "active" : ""}>

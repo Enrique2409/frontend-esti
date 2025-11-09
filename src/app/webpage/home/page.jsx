@@ -14,6 +14,7 @@ import "../../Styles/pagehome.css";
 export default function Home() {
   const [slides, setSlides] = useState([]);
   const [cards, setCards] = useState([]);
+  const [news, setNews] = useState([]);
   const router = useRouter();
 
 useEffect(() => {
@@ -44,9 +45,20 @@ useEffect(() => {
       setCards(cardsData);
     })
     .catch(error => console.error('Error al cargar las tarjetas:', error));
+
+      fetch('http://localhost:8080/esti/content/category/News')
+    .then(response => response.json())
+    .then(data => {
+      const formatUrl = (path) => `http://localhost:8080${path}`;
+      const newsData = data.map(card => ({
+        ...card,
+        imageURL: formatUrl(news.imageURL),
+      }));
+
+      setNews(newsData);
+    })
+    .catch(error => console.error('Error al cargar las tarjetas:', error));
 }, []);
-
-
 
   return (
     <section>
