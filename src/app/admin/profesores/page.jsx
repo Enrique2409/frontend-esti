@@ -25,12 +25,15 @@ export default function PageTeachers() {
   const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
   const [formData, setFormData] = useState({
     idTeacher: "",
     name: "",
     lastName: "",
     phoneNumber: "",
     email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const [selectedTeacherForSubjects, setSelectedTeacherForSubjects] =
@@ -66,7 +69,7 @@ export default function PageTeachers() {
 
   const handleOpenModal = (teacher = null) => {
     if (teacher) {
-      setFormData({ ...teacher });
+      setFormData({ ...teacher, password: "", confirmPassword: "" });
     } else {
       resetForm();
     }
@@ -85,6 +88,8 @@ export default function PageTeachers() {
       lastName: "",
       phoneNumber: "",
       email: "",
+      password: "",
+      confirmPassword: "",
     });
   };
 
@@ -97,6 +102,13 @@ export default function PageTeachers() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.idTeacher) {
+      if (formData.password !== formData.confirmPassword) {
+        Swal.fire("Error", "Las contraseñas no coinciden", "error");
+        return;
+      }
+    }
 
     const formToSend = { ...formData };
     if (!formToSend.idTeacher) delete formToSend.idTeacher;
@@ -134,11 +146,12 @@ export default function PageTeachers() {
         await fetchTeachers(pagination.currentPage);
         Swal.fire("Eliminado", "El profesor ha sido eliminado.", "success");
       } catch (error) {
-        console.error("Error deleting teacher:", error);
+        console.error("Error eliminando profesor:", error);
         Swal.fire("Error", "No se pudo eliminar el profesor.", "error");
       }
     }
   };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -168,6 +181,7 @@ export default function PageTeachers() {
               </select>
             </div>
 
+            {/* Tabla */}
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -196,42 +210,30 @@ export default function PageTeachers() {
                       key={teacher.idTeacher}
                       className="hover:bg-gray-50 transition-colors duration-200"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {teacher.idTeacher}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {teacher.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {teacher.lastName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {teacher.phoneNumber}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {teacher.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900">{teacher.idTeacher}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{teacher.name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{teacher.lastName}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{teacher.phoneNumber}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{teacher.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
                         <button
                           onClick={() => setSelectedTeacherForSubjects(teacher)}
-                          className="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-md text-sm font-medium"
+                          className="px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-md text-sm font-medium"
                         >
                           Ver Materias
                         </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleOpenModal(teacher)}
-                            className="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium transition-colors duration-200"
+                            className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
                           >
                             Editar
                           </button>
                           <button
-                            onClick={() =>
-                              handleDeleteTeacher(teacher.idTeacher)
-                            }
-                            className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium transition-colors duration-200"
+                            onClick={() => handleDeleteTeacher(teacher.idTeacher)}
+                            className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium"
                           >
                             Eliminar
                           </button>
@@ -243,11 +245,12 @@ export default function PageTeachers() {
               </table>
             </div>
 
+            {/* Paginación */}
             <div className="flex justify-between items-center mt-4">
               <button
                 onClick={handlePrevPage}
                 disabled={pagination.currentPage === 0}
-                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
               >
                 Anterior
               </button>
@@ -257,7 +260,7 @@ export default function PageTeachers() {
               <button
                 onClick={handleNextPage}
                 disabled={pagination.currentPage + 1 >= pagination.totalPages}
-                className="px-4 py-2 bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
               >
                 Siguiente
               </button>
@@ -266,23 +269,21 @@ export default function PageTeachers() {
         </div>
       </main>
 
+      {/* Modal de creación/edición */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={formData.idTeacher ? "Editar profesor" : "Nuevo profesor"}
+        title={formData.idTeacher ? "Editar Profesor" : "Nuevo Profesor"}
       >
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Campos comunes */}
           {[
             { label: "Nombre", name: "name", type: "text" },
             { label: "Apellido", name: "lastName", type: "text" },
             { label: "Teléfono", name: "phoneNumber", type: "text" },
-            { label: "Email", name: "email", type: "email" },
           ].map(({ label, name, type }) => (
             <div key={name}>
-              <label
-                htmlFor={name}
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor={name} className="block text-sm font-medium text-gray-700">
                 {label}
               </label>
               <input
@@ -296,23 +297,93 @@ export default function PageTeachers() {
               />
             </div>
           ))}
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              {formData.idTeacher ? "Actualizar" : "Crear"}
-            </button>
+
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              id="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              readOnly={!!formData.idTeacher}
+              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
+                formData.idTeacher ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+              }`}
+            />
+          </div>
+
+          {/* Contraseñas solo si es nuevo */}
+          {!formData.idTeacher && (
+            <>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Contraseña
+                </label>
+                <input
+                  type={showPasswords ? "text" : "password"}
+                  name="password"
+                  id="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Verificar Contraseña
+                </label>
+                <input
+                  type={showPasswords ? "text" : "password"}
+                  name="confirmPassword"
+                  id="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Botones */}
+          <div className="flex justify-between items-center">
+            {!formData.idTeacher && (
+              <button
+                type="button"
+                onClick={() => setShowPasswords(!showPasswords)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                {showPasswords ? "Ocultar contraseña" : "Mostrar contraseña"}
+              </button>
+            )}
+
+            <div className="flex space-x-3 ml-auto">
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+              >
+                {formData.idTeacher ? "Actualizar" : "Crear"}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
+
+      {/* Modal de materias */}
       {selectedTeacherForSubjects && (
         <TeacherSubjectsModal
           teacher={selectedTeacherForSubjects}

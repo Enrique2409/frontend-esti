@@ -153,4 +153,14 @@ export const deleteTeacher = async (idTeacher) => {
     } catch (error) {
         console.error("Error al eliminar profesor:", error);
     }
+
+};
+export const getTeacherById = async (id) => {
+  try {
+    const response = await axios.get(`${teacherURL}/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener el profesor por ID:", error);
+    throw error;
+  }
 };
