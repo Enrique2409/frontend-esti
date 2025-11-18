@@ -1,642 +1,1381 @@
 "use client";
 
-import Swal from 'sweetalert2';
-import { getAllCardex, addCardex, updateCardex, deleteCardex } from "@/app/Service/CardexService";
-import { getAllGroups } from '@/app/Service/GroupService';
-import { getAllStudents, getStudentsByGroup } from "@/app/Service/StudentService";
-import { getAllSubjects } from "@/app/Service/SubjectService";
-import { getAllTeachersAsAdmin } from "@/app/Service/TeacherService";
-import { getTSGByGroup } from '@/app/Service/TSGService';
+import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+
 import Navbar from "../components/navbar";
-import TableHeader from "../components/TableHeader";
-import { useState, useEffect } from "react";
-import SearchBar from "../components/SearchBar";
-import FormField from '../components/FormField';
 import Modal from "../components/Modal";
+import TableHeader from "../components/TableHeader";
+import SearchBar from "../components/SearchBar";
 
-export default function PageCalificaciones() {
-    const [grades, setGrades] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [isAuth, setIsAuth] = useState(false);
+import {
+  getCardexPaginated,
+  searchCardex,
+  createCardex,
+  updateCardex,
+  deleteCardex,
+} from "@/app/Service/CardexService";
 
-    const [groups, setGroups] = useState([]);
-    const [students, setStudents] = useState([]);
-    const [subjects, setSubjects] = useState([]);
-    const [teachers, setTeachers] = useState([]);
-    const [tsgList, setTsgList] = useState([]);
-    const [filteredSubjects, setFilteredSubjects] = useState([]);
-    const [filteredTeachers, setFilteredTeachers] = useState([]);
-    const [isEditing, setIsEditing] = useState(false);
+import {
+  getStudentsPaginated,
+  searchStudents,
+} from "@/app/Service/StudentService";
 
-    const [formData, setFormData] = useState({
-        idCardex: "",
-        groupId: "",
-        teacherId: "",
-        studentId: "",
-        subjectId: "",
-        firstPartial: "",
-        secondPartial: "",
-        thirdPartial: "",
-        finalGrade: ""
-    });
+import {
+  getTeachersPaginated,
+  searchTeachers,
+} from "@/app/Service/TeacherService";
 
-    const [formErrors, setFormErrors] = useState({
-        groupName: "",
-        grade: "",
-        period: "",
-        teacherName: "",
-        teacherLastName: "",
-        studentName: "",
-        studentLastNamePaternal: "",
-        studentLastNameMaternal: "",
-        subjectName: "",
-        firstPartial: "",
-        secondPartial: "",
-        thirdPartial: "",
-        finalGrade: ""
-    });
+import { getSubjectsByTeacher } from "@/app/Service/TeacherSubjectService";
+import { getPeriodsPaginated } from "@/app/Service/PeriodService";
 
-    const validateField = (name, value) => {
-        let error = "";
+export default function PageCardex() {
+  // ------------------ Estado principal (tabla de cardex) ------------------
+  const [cardexList, setCardexList] = useState([]);
+  const [pagination, setPagination] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+  });
+  const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-        switch (name) {
-            case "groupName":
-                if (!value.trim()) error = "El nombre del grupo es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-            case "grade":
-                if (!value || isNaN(value) || value < 1 || value > 12) {
-                    error = "El grado debe ser un número entre 1 y 12";
-                }
-                break;
-            case "period":
-                if (!value.trim()) error = "El periodo es requerido";
-                break;
-            case "teacherName":
-                if (!value.trim()) error = "El nombre del profesor es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-            case "teacherLastName":
-                if (!value.trim()) error = "El apellido del profesor es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-            case "studentName":
-                if (!value.trim()) error = "El nombre del estudiante es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-            case "studentLastNamePaternal":
-                if (!value.trim()) error = "El apellido paterno del estudiante es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-            case "studentLastNameMaternal":
-                if (!value.trim()) error = "El apellido materno del estudiante es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-            case "subjectName":
-                if (!value.trim()) error = "El nombre de la materia es requerido";
-                else if (value.length < 3) error = "Debe tener al menos 3 caracteres";
-                break;
-            case "firstPartial":
-            case "secondPartial":
-            case "thirdPartial":
-                if (!value || isNaN(value) || value < 0 || value > 100) {
-                    error = "La calificación debe ser un número entre 0 y 100";
-                }
-                break;
-            case "finalGrade":
-                if (!value || isNaN(value) || value < 0 || value > 100) {
-                    error = "La calificación final debe ser un número entre 0 y 100";
-                }
-                break;
-            default:
-                break;
-        }
-        setFormErrors(prev => ({
-            ...prev,
-            [name]: error
-        }));
-    };
+  // ------------------ Formulario de Cardex ------------------
+  const initialFormState = {
+    idCardex: null,
 
-    useEffect(() => {
-        checkAuthentication();
-    }, []);
+    // IDs que se envían al backend
+    studentId: "",
+    teacherSubjectId: "",
+    periodId: "",
 
+    // Datos mostrados solo para lectura
+    studentName: "",
+    studentLastNamePaternal: "",
+    studentLastNameMaternal: "",
+    groupName: "",
+    grade: "",
 
-    const checkAuthentication = () => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            setIsAuth(true);
-            fetchCardex();
-            fetchGroups();
-            fetchStudents();
-            fetchSubjects();
-            fetchTeachers();
-            fetchTSGByGroup();
-        } else {
-            setIsAuth(false);
-        }
-    };
+    idTeacher: "",
+    teacherName: "",
+    teacherLastName: "",
+    subjectName: "",
 
-    const fetchTSGByGroup = async (groupId) => {
-        if (!groupId) {
-            setTsgList([]);
-            return;
-        }
-        try {
-            const data = await getTSGByGroup(groupId);
-            setTsgList(data);
-        } catch (error) {
-            console.error("Error al obtener TSG por grupo:", error);
-            setTsgList([]);
-        }
-    };
+    periodCve: "",
 
+    // Calificaciones (0–10)
+    firstPartial: 0,
+    secondPartial: 0,
+    thirdPartial: 0,
+    finalGrade: 0,
+  };
 
-    const fetchCardex = async () => {
-        await getAllCardex(setGrades);
-    };
+  const [formData, setFormData] = useState(initialFormState);
 
-    const fetchGroups = async () => {
-        await getAllGroups(setGroups);
-    };
+  // ------------------ Selectores: alumnos ------------------
+  const [isStudentSelectorOpen, setIsStudentSelectorOpen] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [studentsPagination, setStudentsPagination] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+  });
+  const [studentsPageSize] = useState(10);
+  const [studentsSearchTerm, setStudentsSearchTerm] = useState("");
 
-    const fetchStudents = async () => {
-        await getAllStudents(setStudents);
-    };
+  // ------------------ Selectores: profesores ------------------
+  const [isTeacherSelectorOpen, setIsTeacherSelectorOpen] = useState(false);
+  const [teachers, setTeachers] = useState([]);
+  const [teachersPagination, setTeachersPagination] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+  });
+  const [teachersPageSize] = useState(10);
+  const [teachersSearchTerm, setTeachersSearchTerm] = useState("");
 
-    const fetchSubjects = async () => {
-        await getAllSubjects(setSubjects);
-    };
+  // ------------------ Selectores: materias (TeacherSubject) ------------------
+  const [isSubjectSelectorOpen, setIsSubjectSelectorOpen] = useState(false);
+  const [teacherSubjects, setTeacherSubjects] = useState([]);
 
-    const fetchTeachers = async () => {
-        await getAllTeachersAsAdmin(setTeachers);
-    };
+  // ------------------ Selectores: periodos ------------------
+  const [isPeriodSelectorOpen, setIsPeriodSelectorOpen] = useState(false);
+  const [periods, setPeriods] = useState([]);
+  const [periodsPagination, setPeriodsPagination] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+  });
+  const [periodsPageSize] = useState(10);
 
-    const fetchStudentsByGroup = async (groupId) => {
-        if (!groupId) {
-            fetchStudents();
-            return;
-        }
-        await getStudentsByGroup(groupId, setStudents);
-    };
-
-    const handleOpenModal = async (grade = null) => {
-        if (grade) {
-            // Obtener TSG directamente
-            const tsgData = await getTSGByGroup(grade.idGroup);
-            setTsgList(tsgData);
-
-            // Filtrar materias disponibles
-            const subjectsForGroup = [...new Set(tsgData.map(tsg => tsg.subjectId))].map(subjectId => {
-                const subject = tsgData.find(t => t.subjectId === subjectId);
-                return {
-                    idSubject: subject.subjectId,
-                    subjectName: subject.subjectName
-                };
-            });
-            console.log("materias", subjectsForGroup);
-            setFilteredSubjects(subjectsForGroup);
-
-            // Filtrar profesores según la materia
-            const teachersForSubject = tsgData
-                .filter(tsg => tsg.idSubject === grade.idSubject)
-                .map(tsg => ({
-                    idTeacher: tsg.idTeacher,
-                    teacherName: tsg.teacherName,
-                    teacherLastName: tsg.teacherLastName
-                }));
-            setFilteredTeachers(tsgData);
-            console.log("Filtered Teachers:", tsgData);
-
-
-
-            setFormData({
-                idCardex: grade.idCardex,
-                groupId: grade.idGroup,
-                teacherId: grade.idTeacher,
-                studentId: grade.idStudent,
-                subjectId: grade.idSubject,
-                firstPartial: grade.firstPartial,
-                secondPartial: grade.secondPartial,
-                thirdPartial: grade.thirdPartial,
-                finalGrade: grade.finalGrade
-            });
-        } else {
-            resetForm();
-        }
-
-        setIsModalOpen(true);
-    };
-
-
-    const handleCloseModal = () => {
-        resetForm();
-        setIsModalOpen(false);
-    };
-
-    const resetForm = () => {
-        setFormData({
-            idCardex: "",
-            groupId: "",
-            teacherId: "",
-            studentId: "",
-            subjectId: "",
-            firstPartial: "",
-            secondPartial: "",
-            thirdPartial: "",
-            finalGrade: ""
-        });
-    };
-
-    const handleGroupChange = async (e) => {
-        const groupId = e.target.value;
-        handleChange(e);
-
-        if (groupId) {
-            const tsgData = await getTSGByGroup(groupId);
-            setTsgList(tsgData);
-            fetchStudentsByGroup(groupId);
-        } else {
-            setTsgList([]);
-            setFilteredSubjects([]);
-            setFilteredTeachers([]);
-            setStudents([]);
-        }
-    };
-
-    const handleSubjectChange = (e) => {
-        const subjectId = parseInt(e.target.value); // Asegurarse de que sea número
-        handleChange(e);
-
-        if (subjectId) {
-            const teachersForSubject = tsgList
-                .filter(tsg => tsg.idSubject === subjectId)
-                .map(tsg => ({
-                    idTeacher: tsg.idTeacher,
-                    teacherName: tsg.teacherName,
-                    teacherLastName: tsg.teacherLastName
-                }));
-
-            setFilteredTeachers(teachersForSubject);
-        } else {
-            setFilteredTeachers([]);
-        }
-    };
-
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        validateField(name, value);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        try {
-            if (!formData.idCardex) {
-                const payload = {
-                    Group: { idGroup: formData.groupId },
-                    Student: { idStudent: formData.studentId },
-                    TeacherSubjectGroup: { idTeacherSubjectGroup: formData.teacherId },
-                    firstPartial: formData.firstPartial,
-                    secondPartial: formData.secondPartial,
-                    thirdPartial: formData.thirdPartial,
-                    finalGrade: formData.finalGrade
-                };
-                await addCardex(payload);
-                Swal.fire("Calificación agregada con éxito", "", "success");
-            } else {
-                const payload = {
-                    firstPartial: formData.firstPartial,
-                    secondPartial: formData.secondPartial,
-                    thirdPartial: formData.thirdPartial,
-                    finalGrade: formData.finalGrade
-                };
-                await updateCardex({ ...payload, idCardex: formData.idCardex });
-                Swal.fire("Calificación actualizada con éxito", "", "success");
-                console.log("Payload de actualización:", { ...payload, idCardex: formData.idCardex });
-            }
-
-            await fetchCardex();
-            handleCloseModal();
-        } catch (error) {
-            console.error("Error al guardar la calificación:", error);
-            Swal.fire("Error al guardar la calificación", "", "error");
-        }
-    };
-
-
-
-    const handleDelete = async (idCardex) => {
-        const result = await Swal.fire({
-            title: '¿Estás seguro?',
-            text: "No podrás revertir esto.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await deleteCardex(idCardex);
-                await fetchCardex();
-                Swal.fire("Calificación eliminada con éxito", "", "success");
-            } catch (error) {
-                console.error("Error al eliminar la calificación:", error);
-                Swal.fire("Error al eliminar la calificación", "", "error");
-            }
-        }
-    };
-
-    const filteredCardex = grades.filter(cal =>
-        (cal.Student?.studentName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Student?.studentLastNamePaternal?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Student?.studentLastNameMaternal?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Group?.groupName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Group?.grade?.toString() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Group?.period?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Teacher?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (cal.Teacher?.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-    );
-
-    if (!isAuth) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold">No tienes permiso para acceder a esta página</h1>
-                    <p className="mt-4 text-gray-600">Por favor, inicia sesión con una cuenta de administrador.</p>
-                    <div className="mt-6">
-                        <button
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            onClick={() => (window.location.href = "/")}
-                        >
-                            Iniciar sesión
-                        </button>
-                    </div>
-                </div>
-            </div>
+  // ================== CARGA PRINCIPAL DE CARDEX ==================
+  const fetchCardex = async (page = 0, keyword = "") => {
+    try {
+      if (keyword.trim() !== "") {
+        await searchCardex(
+          keyword,
+          page,
+          pageSize,
+          setCardexList,
+          setPagination
         );
+      } else {
+        await getCardexPaginated(page, pageSize, setCardexList, setPagination);
+      }
+    } catch (error) {
+      console.error("Error al obtener cardex:", error);
+      setCardexList([]);
+      setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+    }
+  };
+
+  useEffect(() => {
+    fetchCardex(0, searchTerm);
+  }, [pageSize, searchTerm]);
+
+  const handleNextPage = () => {
+    if (pagination.currentPage + 1 < pagination.totalPages) {
+      fetchCardex(pagination.currentPage + 1, searchTerm);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pagination.currentPage > 0) {
+      fetchCardex(pagination.currentPage - 1, searchTerm);
+    }
+  };
+
+  const handlePageSizeChange = (event) => {
+    setPageSize(Number(event.target.value));
+  };
+
+  // ================== FORMULARIO PRINCIPAL (CREAR / EDITAR) ==================
+  const resetForm = () => {
+    setFormData({
+      ...initialFormState,
+      firstPartial: 0,
+      secondPartial: 0,
+      thirdPartial: 0,
+      finalGrade: 0,
+    });
+  };
+
+  const handleOpenModal = async (cardex = null) => {
+    if (cardex) {
+      // Editar
+      const newForm = {
+        ...initialFormState,
+        idCardex: cardex.idCardex,
+
+        studentId: cardex.idStudent,
+        studentName: cardex.studentName,
+        studentLastNamePaternal: cardex.studentLastNamePaternal,
+        studentLastNameMaternal: cardex.studentLastNameMaternal,
+        groupName: cardex.groupName,
+        grade: cardex.grade,
+
+        idTeacher: cardex.idTeacher,
+        teacherName: cardex.teacherName,
+        teacherLastName: cardex.teacherLastName,
+        subjectName: cardex.subjectName,
+
+        periodId: cardex.idPeriod,
+        periodCve: cardex.period,
+
+        firstPartial: cardex.firstPartial ?? 0,
+        secondPartial: cardex.secondPartial ?? 0,
+        thirdPartial: cardex.thirdPartial ?? 0,
+        finalGrade: cardex.finalGrade ?? 0,
+
+        teacherSubjectId: "", // lo intentamos resolver abajo
+      };
+
+      setFormData(newForm);
+
+      // Intentar pre-resolver el idTeacherSubject en base al maestro y materia actuales
+      if (cardex.idTeacher) {
+        try {
+          const list = await getSubjectsByTeacher(cardex.idTeacher);
+          setTeacherSubjects(list || []);
+
+          const match = (list || []).find((ts) => {
+            const subjectLabel =
+              ts.subjectName || (ts.subject && ts.subject.name) || "";
+            const groupLabel =
+              ts.groupName || (ts.group && ts.group.groupName) || "";
+
+            return (
+              subjectLabel === cardex.subjectName &&
+              groupLabel === cardex.groupName
+            );
+          });
+
+          if (match && match.idTeacherSubject) {
+            setFormData((prev) => ({
+              ...prev,
+              teacherSubjectId: match.idTeacherSubject,
+            }));
+          }
+        } catch (error) {
+          console.error(
+            "No se pudo pre-cargar la relación TeacherSubject para este cardex:",
+            error
+          );
+        }
+      }
+    } else {
+      // Nuevo
+      resetForm();
     }
 
-    return (
-        <div className="min-h-screen bg-white">
-            <Navbar />
-            <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
-                <TableHeader
-                    title="Calificaciones"
-                    onAdd={() => handleOpenModal()}
-                    buttonLabel="Nueva Calificación"
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    resetForm();
+    setIsModalOpen(false);
+  };
+
+  // Manejar cambios SOLO de calificaciones (0–10)
+  const handleGradeChange = (e) => {
+    const { name, value } = e.target;
+
+    // Solo dejamos cambiar los 3 parciales
+    if (!["firstPartial", "secondPartial", "thirdPartial"].includes(name)) {
+      return;
+    }
+
+    const num = value === "" ? 0 : Number(value);
+    if (Number.isNaN(num) || num < 0 || num > 10) return;
+
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: num };
+
+      const p1 = Number(updated.firstPartial) || 0;
+      const p2 = Number(updated.secondPartial) || 0;
+      const p3 = Number(updated.thirdPartial) || 0;
+
+      // Promedio redondeado 0–10
+      const final = Math.round((p1 + p2 + p3) / 3);
+      updated.finalGrade = final;
+
+      return updated;
+    });
+  };
+
+  const validateGrades = () => {
+    const gradeFields = [
+      { key: "firstPartial", label: "Primer parcial" },
+      { key: "secondPartial", label: "Segundo parcial" },
+      { key: "thirdPartial", label: "Tercer parcial" },
+      { key: "finalGrade", label: "Calificación final" },
+    ];
+
+    for (const { key, label } of gradeFields) {
+      const val = Number(formData[key]);
+      if (Number.isNaN(val) || val < 0 || val > 10) {
+        Swal.fire("Error", `${label} debe estar entre 0 y 10.`, "error");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.studentId) {
+      Swal.fire("Error", "Debes seleccionar un alumno.", "error");
+      return;
+    }
+
+    if (!formData.idTeacher) {
+      Swal.fire("Error", "Debes seleccionar un profesor.", "error");
+      return;
+    }
+
+    if (!formData.teacherSubjectId) {
+      Swal.fire(
+        "Error",
+        "Debes seleccionar una materia (relación maestro-materia).",
+        "error"
+      );
+      return;
+    }
+
+    if (!formData.periodId) {
+      Swal.fire("Error", "Debes seleccionar un periodo.", "error");
+      return;
+    }
+
+    if (!validateGrades()) return;
+
+    const payload = {
+      studentId: formData.studentId,
+      teacherSubjectId: formData.teacherSubjectId,
+      periodId: formData.periodId,
+      firstPartial: Number(formData.firstPartial),
+      secondPartial: Number(formData.secondPartial),
+      thirdPartial: Number(formData.thirdPartial),
+      finalGrade: Number(formData.finalGrade),
+    };
+
+    try {
+      if (formData.idCardex) {
+        // editar
+        await updateCardex(payload, formData.idCardex);
+      } else {
+        // nuevo
+        await createCardex(payload);
+      }
+
+      await fetchCardex(pagination.currentPage, searchTerm);
+      handleCloseModal();
+      Swal.fire(
+        "Éxito",
+        "Registro de cardex guardado correctamente",
+        "success"
+      );
+    } catch (error) {
+      console.error("Error al guardar el cardex:", error);
+      Swal.fire("Error", "No se pudo guardar el registro de cardex", "error");
+    }
+  };
+
+  const handleDeleteCardex = async (idCardex) => {
+    const result = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "No podrás revertir esto.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteCardex(idCardex); // según tu servicio, puede ser delete lógico
+      await fetchCardex(pagination.currentPage, searchTerm);
+      Swal.fire(
+        "Eliminado",
+        "El registro de cardex ha sido eliminado.",
+        "success"
+      );
+    } catch (error) {
+      console.error("Error eliminando cardex:", error);
+      Swal.fire("Error", "No se pudo eliminar el registro de cardex.", "error");
+    }
+  };
+
+  // ================== SELECTOR DE ALUMNOS ==================
+  const fetchStudents = async (page = 0, keyword = "") => {
+    try {
+      if (keyword.trim() !== "") {
+        await searchStudents(
+          keyword,
+          page,
+          studentsPageSize,
+          setStudents,
+          setStudentsPagination
+        );
+      } else {
+        await getStudentsPaginated(
+          page,
+          studentsPageSize,
+          setStudents,
+          setStudentsPagination
+        );
+      }
+    } catch (error) {
+      console.error("Error al obtener alumnos:", error);
+      setStudents([]);
+      setStudentsPagination({
+        totalPages: 0,
+        totalElements: 0,
+        currentPage: 0,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isStudentSelectorOpen) {
+      fetchStudents(0, studentsSearchTerm);
+    }
+  }, [isStudentSelectorOpen, studentsSearchTerm, studentsPageSize]);
+
+  const handleStudentsNextPage = () => {
+    if (studentsPagination.currentPage + 1 < studentsPagination.totalPages) {
+      fetchStudents(studentsPagination.currentPage + 1, studentsSearchTerm);
+    }
+  };
+
+  const handleStudentsPrevPage = () => {
+    if (studentsPagination.currentPage > 0) {
+      fetchStudents(studentsPagination.currentPage - 1, studentsSearchTerm);
+    }
+  };
+
+  const handleSelectStudent = (student) => {
+    setFormData((prev) => ({
+      ...prev,
+      studentId: student.idStudent,
+      studentName: student.name,
+      studentLastNamePaternal: student.lastNamePaternal,
+      studentLastNameMaternal: student.lastNameMaternal,
+      groupName: student.groupName ?? "",
+      grade: student.grade ?? "",
+    }));
+    setIsStudentSelectorOpen(false);
+  };
+
+  // ================== SELECTOR DE PROFESORES ==================
+  const fetchTeachers = async (page = 0, keyword = "") => {
+    try {
+      if (keyword.trim() !== "") {
+        await searchTeachers(
+          keyword,
+          page,
+          teachersPageSize,
+          setTeachers,
+          setTeachersPagination
+        );
+      } else {
+        await getTeachersPaginated(
+          page,
+          teachersPageSize,
+          setTeachers,
+          setTeachersPagination
+        );
+      }
+    } catch (error) {
+      console.error("Error al obtener profesores:", error);
+      setTeachers([]);
+      setTeachersPagination({
+        totalPages: 0,
+        totalElements: 0,
+        currentPage: 0,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isTeacherSelectorOpen) {
+      fetchTeachers(0, teachersSearchTerm);
+    }
+  }, [isTeacherSelectorOpen, teachersSearchTerm, teachersPageSize]);
+
+  const handleTeachersNextPage = () => {
+    if (teachersPagination.currentPage + 1 < teachersPagination.totalPages) {
+      fetchTeachers(teachersPagination.currentPage + 1, teachersSearchTerm);
+    }
+  };
+
+  const handleTeachersPrevPage = () => {
+    if (teachersPagination.currentPage > 0) {
+      fetchTeachers(teachersPagination.currentPage - 1, teachersSearchTerm);
+    }
+  };
+
+  const handleSelectTeacher = (teacher) => {
+    setFormData((prev) => ({
+      ...prev,
+      idTeacher: teacher.idTeacher,
+      teacherName: teacher.name,
+      teacherLastName: teacher.lastName,
+      teacherSubjectId: "",
+      subjectName: "",
+    }));
+    setTeacherSubjects([]);
+    setIsTeacherSelectorOpen(false);
+  };
+
+  // ================== SELECTOR DE MATERIAS (POR PROFESOR) ==================
+  const openSubjectSelector = async () => {
+    if (!formData.idTeacher) {
+      Swal.fire(
+        "Atención",
+        "Primero debes seleccionar un profesor.",
+        "warning"
+      );
+      return;
+    }
+
+    try {
+      const list = await getSubjectsByTeacher(formData.idTeacher);
+      setTeacherSubjects(list || []);
+      setIsSubjectSelectorOpen(true);
+    } catch (error) {
+      console.error("Error al obtener materias del profesor:", error);
+      Swal.fire(
+        "Error",
+        "No se pudieron obtener las materias del profesor.",
+        "error"
+      );
+    }
+  };
+
+  const handleSelectSubject = (ts) => {
+    const subjectLabel =
+      ts.subjectName || (ts.subject && ts.subject.name) || "";
+
+    setFormData((prev) => ({
+      ...prev,
+      teacherSubjectId: ts.idTeacherSubject,
+      subjectName: subjectLabel,
+    }));
+
+    setIsSubjectSelectorOpen(false);
+  };
+
+  // ================== SELECTOR DE PERIODOS ==================
+  const fetchPeriods = async (page = 0) => {
+    try {
+      await getPeriodsPaginated(
+        page,
+        periodsPageSize,
+        setPeriods,
+        setPeriodsPagination
+      );
+    } catch (error) {
+      console.error("Error al obtener periodos:", error);
+      setPeriods([]);
+      setPeriodsPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
+    }
+  };
+
+  useEffect(() => {
+    if (isPeriodSelectorOpen) {
+      fetchPeriods(0);
+    }
+  }, [isPeriodSelectorOpen, periodsPageSize]);
+
+  const handlePeriodsNextPage = () => {
+    if (periodsPagination.currentPage + 1 < periodsPagination.totalPages) {
+      fetchPeriods(periodsPagination.currentPage + 1);
+    }
+  };
+
+  const handlePeriodsPrevPage = () => {
+    if (periodsPagination.currentPage > 0) {
+      fetchPeriods(periodsPagination.currentPage - 1);
+    }
+  };
+
+  const handleSelectPeriod = (period) => {
+    setFormData((prev) => ({
+      ...prev,
+      periodId: period.idPeriod,
+      periodCve: period.cve,
+    }));
+    setIsPeriodSelectorOpen(false);
+  };
+
+  // ================== RENDER ==================
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
+        <TableHeader
+          title="Cardex"
+          onAdd={() => handleOpenModal()}
+          buttonLabel="Nuevo registro"
+        />
+
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+          <div className="p-6">
+            <SearchBar onSearch={setSearchTerm} />
+
+            <div className="mb-4">
+              <label className="mr-2 font-medium text-gray-700">
+                Registros por página:
+              </label>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="border border-gray-300 rounded-md px-2 py-1"
+              >
+                <option value={1}>1</option>
+                <option value={10}>10</option>
+                <option value={30}>30</option>
+              </select>
+            </div>
+
+            {/* Tabla principal de Cardex */}
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto divide-y divide-gray-200 whitespace-nowrap">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {[
+                      "ID",
+                      "Alumno",
+                      "Grupo",
+                      "Grado",
+                      "Profesor",
+                      "Materia",
+                      "Periodo",
+                      "P1",
+                      "P2",
+                      "P3",
+                      "Final",
+                      "Acciones",
+                    ].map((header) => (
+                      <th
+                        key={header}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {cardexList.map((c) => (
+                    <tr
+                      key={c.idCardex}
+                      className="hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.idCardex}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.studentName} {c.studentLastNamePaternal}{" "}
+                        {c.studentLastNameMaternal}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.groupName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.grade}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.teacherName} {c.teacherLastName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.subjectName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.period}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.firstPartial ?? 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.secondPartial ?? 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.thirdPartial ?? 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {c.finalGrade ?? 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleOpenModal(c)}
+                            className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCardex(c.idCardex)}
+                            className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {cardexList.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={12}
+                        className="px-6 py-4 text-center text-sm text-gray-500"
+                      >
+                        No hay registros de cardex.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginación principal */}
+            <div className="flex justify-between items-center mt-4">
+              <button
+                onClick={handlePrevPage}
+                disabled={pagination.currentPage === 0}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <span>
+                Página {pagination.currentPage + 1} de {pagination.totalPages}
+              </span>
+              <button
+                onClick={handleNextPage}
+                disabled={pagination.currentPage + 1 >= pagination.totalPages}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* ================== MODAL PRINCIPAL CARDEx ================== */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title={
+          formData.idCardex
+            ? "Editar registro de Cardex"
+            : "Nuevo registro de Cardex"
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Alumno */}
+          <div className="space-y-2 border-b border-gray-200 pb-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-semibold text-gray-700">Alumno</h3>
+              <button
+                type="button"
+                onClick={() => setIsStudentSelectorOpen(true)}
+                className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100"
+              >
+                Seleccionar alumno
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  ID Alumno
+                </label>
+                <input
+                  type="text"
+                  value={formData.studentId || ""}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Nombre completo
+                </label>
+                <input
+                  type="text"
+                  value={
+                    formData.studentName
+                      ? `${formData.studentName} ${formData.studentLastNamePaternal} ${formData.studentLastNameMaternal}`
+                      : ""
+                  }
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Grupo
+                </label>
+                <input
+                  type="text"
+                  value={formData.groupName || ""}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Grado
+                </label>
+                <input
+                  type="text"
+                  value={formData.grade || ""}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+              </div>
+            </div>
+          </div>
 
-                <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-                    <div className="p-6">
-                        <SearchBar onSearch={setSearchTerm} />
+          {/* Profesor y materia */}
+          <div className="space-y-2 border-b border-gray-200 pb-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Profesor y materia
+              </h3>
+            </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        {["ID", "Grupo", "Profesor", "Alumno", "Materia", "1er Parcial", "2do Parcial", "3er Parcial", "Calificación Final", "Acciones"].map((header) => (
-                                            <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                {header}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredCardex.map((calificacion) => (
-                                        <tr key={calificacion.idCardex} className="hover:bg-gray-50 transition-colors duration-200">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.idCardex}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.grade}° {calificacion.groupName} - {calificacion.period}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.teacherName} {calificacion.teacherLastName}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.studentName} {calificacion.studentLastNamePaternal} {calificacion.studentLastNameMaternal}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.subjectName}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.firstPartial}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.secondPartial}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {calificacion.thirdPartial}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${calificacion.finalGrade >= 8 ? 'bg-green-100 text-green-800' :
-                                                    calificacion.finalGrade >= 6 ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {calificacion.finalGrade}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={() => handleOpenModal(calificacion)}
-                                                        className="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium transition-colors duration-200"
-                                                    >
-                                                        <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                        </svg>
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(calificacion.id)}
-                                                        className="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md text-sm font-medium transition-colors duration-200"
-                                                    >
-                                                        <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                        Eliminar
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Profesor
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsTeacherSelectorOpen(true)}
+                    className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100"
+                  >
+                    Seleccionar profesor
+                  </button>
                 </div>
-            </main >
+                <input
+                  type="text"
+                  value={
+                    formData.teacherName
+                      ? `${formData.teacherName} ${formData.teacherLastName}`
+                      : ""
+                  }
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+                <input
+                  type="text"
+                  value={formData.idTeacher || ""}
+                  readOnly
+                  className="mt-2 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                  placeholder="ID Profesor"
+                />
+              </div>
 
-            <Modal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                title={formData.idCardex ? "Editar Calificación" : "Nueva Calificación"}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Materia (relación TSG)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={openSubjectSelector}
+                    className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100"
+                  >
+                    Seleccionar materia
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={formData.subjectName || ""}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+                <input
+                  type="text"
+                  value={formData.teacherSubjectId || ""}
+                  readOnly
+                  className="mt-2 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                  placeholder="ID TeacherSubject"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Periodo */}
+          <div className="space-y-2 border-b border-gray-200 pb-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-semibold text-gray-700">Periodo</h3>
+              <button
+                type="button"
+                onClick={() => setIsPeriodSelectorOpen(true)}
+                className="px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100"
+              >
+                Seleccionar periodo
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  ID Periodo
+                </label>
+                <input
+                  type="text"
+                  value={formData.periodId || ""}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Clave de periodo
+                </label>
+                <input
+                  type="text"
+                  value={formData.periodCve || ""}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-700">
+              Calificaciones (0 a 10)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label
+                  htmlFor="firstPartial"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Primer parcial
+                </label>
+                <input
+                  id="firstPartial"
+                  name="firstPartial"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={formData.firstPartial}
+                  onChange={handleGradeChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="secondPartial"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Segundo parcial
+                </label>
+                <input
+                  id="secondPartial"
+                  name="secondPartial"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={formData.secondPartial}
+                  onChange={handleGradeChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="thirdPartial"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Tercer parcial
+                </label>
+                <input
+                  id="thirdPartial"
+                  name="thirdPartial"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={formData.thirdPartial}
+                  onChange={handleGradeChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="finalGrade"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Calificación final (automática)
+                </label>
+                <input
+                  id="finalGrade"
+                  name="finalGrade"
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={formData.finalGrade}
+                  readOnly
+                  className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed shadow-sm sm:text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Botones */}
+          <div className="flex justify-between items-center mt-6">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-                <div className="max-h-[70vh] overflow-y-auto pr-2">
-                    <form onSubmit={handleSubmit} className="space-y-4">
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700"
+            >
+              {formData.idCardex ? "Guardar cambios" : "Crear registro"}
+            </button>
+          </div>
+        </form>
+      </Modal>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Grupo</label>
-                            <select
-                                name="groupId"
-                                value={formData.groupId || ""}
-                                onChange={handleGroupChange}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
-                                required
-                                disabled={!!formData.idCardex}
+      {/* ================== MODAL SELECTOR ALUMNOS ================== */}
+      <Modal
+        isOpen={isStudentSelectorOpen}
+        onClose={() => setIsStudentSelectorOpen(false)}
+        title="Seleccionar alumno"
+      >
+        <div className="w-[90vw] max-w-6xl">
+          <SearchBar onSearch={setStudentsSearchTerm} />
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full table-auto divide-y divide-gray-200 whitespace-nowrap">
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    "ID",
+                    "Nombre",
+                    "Apellido Paterno",
+                    "Apellido Materno",
+                    "CURP",
+                    "Grupo",
+                    "Grado",
+                    "Acciones",
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {students.map((s) => (
+                  <tr key={s.idStudent} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {s.idStudent}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {s.name}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {s.lastNamePaternal}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {s.lastNameMaternal}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {s.curp}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {s.groupName ?? (s.group ? s.group.groupName : "")}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {s.grade ?? (s.group ? s.group.grade : "")}
+                    </td>
 
-                            >
-                                <option value="">Seleccione un grupo</option>
-                                {groups.map(group => (
-                                    <option key={group.idGroup} value={group.idGroup}>
-                                        {group.grade}° {group.groupName} - {group.period?.periodName}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectStudent(s)}
+                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
+                      >
+                        Seleccionar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {students.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-2 text-center text-sm text-gray-500"
+                    >
+                      No se encontraron alumnos.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Materia</label>
-                            <select
-                                name="subjectId"
-                                value={formData.subjectId || ""}
-                                onChange={handleSubjectChange}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
-                                required
-                                disabled={!!formData.idCardex}
-                            >
-                                <option value="">Seleccione una materia</option>
-                                {[...new Set(tsgList.map(tsg => tsg.idSubject))]
-                                    .map((idSubject, index) => {
-                                        const subject = tsgList.find(t => t.idSubject === idSubject);
-                                        if (!subject) return null; // evita undefined
-                                        return (
-                                            <option key={`subject-${idSubject}-${index}`} value={idSubject}>
-                                                {subject.subjectName}
-                                            </option>
-                                        );
-                                    })}
+          <div className="flex justify-between items-center mt-4">
+            <button
+              type="button"
+              onClick={handleStudentsPrevPage}
+              disabled={studentsPagination.currentPage === 0}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {studentsPagination.currentPage + 1} de{" "}
+              {studentsPagination.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={handleStudentsNextPage}
+              disabled={
+                studentsPagination.currentPage + 1 >=
+                studentsPagination.totalPages
+              }
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </Modal>
 
-                            </select>
-                        </div>
+      {/* ================== MODAL SELECTOR PROFESORES ================== */}
+      <Modal
+        isOpen={isTeacherSelectorOpen}
+        onClose={() => setIsTeacherSelectorOpen(false)}
+        title="Seleccionar profesor"
+      >
+        <div className="w-[90vw] max-w-6xl">
+          <SearchBar onSearch={setTeachersSearchTerm} />
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full table-auto divide-y divide-gray-200 whitespace-nowrap">
+              <thead className="bg-gray-50">
+                <tr>
+                  {[
+                    "ID",
+                    "Nombre",
+                    "Apellido",
+                    "Teléfono",
+                    "Email",
+                    "Acciones",
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {teachers.map((t) => (
+                  <tr key={t.idTeacher} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {t.idTeacher}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {t.name}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {t.lastName}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {t.phoneNumber}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {t.email}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectTeacher(t)}
+                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
+                      >
+                        Seleccionar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {teachers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-4 py-2 text-center text-sm text-gray-500"
+                    >
+                      No se encontraron profesores.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Profesor</label>
-                            <select
-                                name="teacherId"
-                                value={formData.teacherId || ""}
-                                onChange={handleChange}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
-                                required
-                                disabled={!!formData.idCardex}
-                            >
-                                <option value="">Seleccione un profesor</option>
-                                {[...new Set(tsgList.map(tsg => tsg.idTeacher))]
-                                    .map((idTeacher, index) => {
-                                        const teacher = tsgList.find(t => t.idTeacher === idTeacher);
-                                        if (!teacher) return null; // evita undefined
-                                        return (
-                                            <option key={`teacher-${idTeacher}-${index}`} value={idTeacher}>
-                                                {teacher.teacherName} {teacher.teacherLastName}
-                                            </option>
-                                        );
-                                    })}
-                            </select>
-                        </div>
+          <div className="flex justify-between items-center mt-4">
+            <button
+              type="button"
+              onClick={handleTeachersPrevPage}
+              disabled={teachersPagination.currentPage === 0}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {teachersPagination.currentPage + 1} de{" "}
+              {teachersPagination.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={handleTeachersNextPage}
+              disabled={
+                teachersPagination.currentPage + 1 >=
+                teachersPagination.totalPages
+              }
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </Modal>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Alumno</label>
-                            <select
-                                name="studentId"
-                                value={formData.studentId || ""}
-                                onChange={handleChange}
-                                className="mt-1 block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md"
-                                required
-                                disabled={!!formData.idCardex} // true si estamos editando
-                            >
-                                <option value="">Seleccione un alumno</option>
-                                {students.map(student => (
-                                    <option key={student.idStudent} value={student.idStudent}>
-                                        {student.firstName} {student.lastNamePaternal} {student.lastNameMaternal}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+      {/* ================== MODAL SELECTOR MATERIAS (TSG) ================== */}
+      <Modal
+        isOpen={isSubjectSelectorOpen}
+        onClose={() => setIsSubjectSelectorOpen(false)}
+        title="Seleccionar materia del profesor"
+      >
+        <div className="w-[90vw] max-w-6xl">
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full table-auto divide-y divide-gray-200 whitespace-nowrap">
+              <thead className="bg-gray-50">
+                <tr>
+                  {["ID TSG", "Materia", "Grupo", "Acciones"].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {teacherSubjects.map((ts) => {
+                  const subjectLabel =
+                    ts.subjectName || (ts.subject && ts.subject.name) || "";
+                  const groupLabel =
+                    ts.groupName || (ts.group && ts.group.groupName) || "";
 
+                  return (
+                    <tr key={ts.idTeacherSubject} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 text-sm text-gray-900">
+                        {ts.idTeacherSubject}
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-900">
+                        {subjectLabel}
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-900">
+                        {groupLabel}
+                      </td>
+                      <td className="px-4 py-2 text-sm text-gray-900">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectSubject(ts)}
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
+                        >
+                          Seleccionar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {teacherSubjects.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-4 py-2 text-center text-sm text-gray-500"
+                    >
+                      No se encontraron materias para este profesor.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </Modal>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Primer Parcial</label>
-                            <FormField
-                                type="number"
-                                name="firstPartial"
-                                value={formData.firstPartial}
-                                onChange={handleChange}
-                                error={formErrors.firstPartial}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Segundo Parcial</label>
-                            <FormField
-                                type="number"
-                                name="secondPartial"
-                                value={formData.secondPartial}
-                                onChange={handleChange}
-                                error={formErrors.secondPartial}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Tercer Parcial</label>
-                            <FormField
-                                type="number"
-                                name="thirdPartial"
-                                value={formData.thirdPartial}
-                                onChange={handleChange}
-                                error={formErrors.thirdPartial}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Calificación Final</label>
-                            <FormField
-                                type="number"
-                                name="finalGrade"
-                                value={formData.finalGrade}
-                                onChange={handleChange}
-                                error={formErrors.finalGrade}
-                                required
-                            />
-                        </div>
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                type="button"
-                                onClick={handleCloseModal}
-                                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                            >
-                                {formData.id ? "Actualizar" : "Crear"}
-                                {/*isEditing ? "Actualizar Calificación" : "Crear Calificación"}*/}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </Modal>
-        </div >
-    );
+      {/* ================== MODAL SELECTOR PERIODOS ================== */}
+      <Modal
+        isOpen={isPeriodSelectorOpen}
+        onClose={() => setIsPeriodSelectorOpen(false)}
+        title="Seleccionar periodo"
+      >
+        <div className="w-[90vw] max-w-6xl">
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full table-auto divide-y divide-gray-200 whitespace-nowrap">
+              <thead className="bg-gray-50">
+                <tr>
+                  {["ID", "Clave", "Descripción", "Acciones"].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {periods.map((p) => (
+                  <tr key={p.idPeriod} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {p.idPeriod}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{p.cve}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      {p.description}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPeriod(p)}
+                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
+                      >
+                        Seleccionar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {periods.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-4 py-2 text-center text-sm text-gray-500"
+                    >
+                      No se encontraron periodos.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-between items-center mt-4">
+            <button
+              type="button"
+              onClick={handlePeriodsPrevPage}
+              disabled={periodsPagination.currentPage === 0}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {periodsPagination.currentPage + 1} de{" "}
+              {periodsPagination.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={handlePeriodsNextPage}
+              disabled={
+                periodsPagination.currentPage + 1 >=
+                periodsPagination.totalPages
+              }
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
 }

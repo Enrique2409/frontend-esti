@@ -17,27 +17,6 @@ export const login = async (credentials) => {
         throw error;
     }
 };
-//Borrar
-/*
-export const getAllTeachersAsAdmin = async (setTeachers) => {
-    try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setTeachers([]);
-            return;
-        }
-
-        const response = await axios.get(`${teacherURL}/active`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        setTeachers(response.data);
-    } catch (error) {
-        console.error("Error al obtener profesores:", error);
-        setTeachers([]);
-    }
-};
-*/
 
 export const getTeachersPaginated = async (page = 0, size = 10, setTeachers, setPagination) => {
     try {
