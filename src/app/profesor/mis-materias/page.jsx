@@ -2,10 +2,9 @@
 
 import Navbar from "../components/navbar";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import SearchBar from "../components/SearchBar";
-import {
-  getSubjectsByTeacher,
-} from "@/app/Service/TeacherSubjectService";
+import { getSubjectsByTeacher } from "@/app/Service/TeacherSubjectService";
 
 export default function PageTeacherSubjects() {
   const [subjects, setSubjects] = useState([]);
@@ -18,15 +17,43 @@ export default function PageTeacherSubjects() {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const teacherId = 1; // Simulado (debería venir del token en producción)
+  const [teacherId, setTeacherId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
 
+  const router = useRouter();
+
+  // Leer id y rol del localStorage
   useEffect(() => {
-    fetchSubjects();
-  }, []);
+    if (typeof window === "undefined") return;
 
+    const storedRole = localStorage.getItem("role");
+    const storedId = localStorage.getItem("userId");
+
+    if (storedRole !== "TEACHER" || !storedId) {
+      setAuthError("No estás autorizado para ver esta página.");
+      setLoading(false);
+      // Si quieres redirigir al inicio:
+      // router.push("/");
+      return;
+    }
+
+    setTeacherId(Number(storedId));
+    setLoading(false);
+  }, [router]);
+
+  // Cargar materias cuando ya tenemos el teacherId
+  useEffect(() => {
+    if (!teacherId) return;
+    fetchSubjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teacherId]);
+
+  // Actualizar filtrado cuando cambia búsqueda o materias
   useEffect(() => {
     handleSearch(searchTerm);
-  }, [searchTerm, subjects]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, subjects, pageSize]);
 
   const fetchSubjects = async () => {
     try {
@@ -41,7 +68,9 @@ export default function PageTeacherSubjects() {
 
   const updatePagination = (data, page) => {
     const totalElements = data.length;
-    const totalPages = Math.ceil(totalElements / pageSize);
+    const totalPages = Math.ceil(
+      totalElements / (pageSize || 1)
+    );
     setPagination({ totalPages, totalElements, currentPage: page });
     setFilteredSubjects(
       data.slice(page * pageSize, (page + 1) * pageSize)
@@ -65,6 +94,7 @@ export default function PageTeacherSubjects() {
   const handlePageSizeChange = (e) => {
     const newSize = Number(e.target.value);
     setPageSize(newSize);
+    // Recalcular paginación desde la página 0 con el nuevo tamaño
     updatePagination(subjects, 0);
   };
 
@@ -78,6 +108,22 @@ export default function PageTeacherSubjects() {
     );
     updatePagination(filtered, 0);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-gray-700">Cargando...</p>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-red-600">{authError}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -156,7 +202,8 @@ export default function PageTeacherSubjects() {
                 Anterior
               </button>
               <span>
-                Página {pagination.currentPage + 1} de {pagination.totalPages}
+                Página {pagination.currentPage + 1} de{" "}
+                {pagination.totalPages}
               </span>
               <button
                 onClick={handleNextPage}
