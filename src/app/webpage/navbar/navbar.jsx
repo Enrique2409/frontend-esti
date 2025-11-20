@@ -20,51 +20,50 @@ function Navbar() {
   };
 
   const isActive = (path) => pathname === path;
-  const isActiveSub = (path) => pathname.startsWith(path) ? 'active' : '';
 
   return (
-    <header>
-      <a className="navbar-brand" href="/webpage/home">
+    <header className="navbar-container">
+      
+      <a className="navbar-brand" onClick={() => navigate("/webpage/home")}>
         <Image src="/logo.png" alt="Logo" width={105} height={85} />
       </a>
 
-      <nav ref={navRef}>
+      <nav ref={navRef} className="navbar-menu">
 
-        
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate("/webpage/home"); }} className={isActive("/webpage/home") ? "active" : ""}>
-          <i className={`fas fa-home ${isActive("/webpage/home") ? "icon-active" : ""}`}></i> Inicio
+        <a onClick={() => navigate("/webpage/home")} className={isActive("/webpage/home") ? "active" : ""}>
+          <i className="fa-solid fa-house"></i> Inicio
         </a>
 
-         <a href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} className={isActive("/") ? "active" : ""}>
-          <i className={`fas fa-home ${isActive("/") ? "icon-active" : ""}`}></i> Nosotros
+        <a onClick={() => navigate("/webpage/we")} className={isActive("/webpage/we") ? "active" : ""}>
+          <i className="fa-solid fa-school"></i> Nosotros
         </a>
 
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} className={isActive("/") ? "active" : ""}>
-          <i className={`fas fa-home ${isActive("/") ? "icon-active" : ""}`}></i> Inscripción
+        <a onClick={() => navigate("/webpage/inscription")} className={isActive("/webpage/inscription") ? "active" : ""}>
+          <i className="fa-solid fa-file-pen"></i> Inscripción
         </a>
 
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} className={isActive("/") ? "active" : ""}>
-          <i className={`fas fa-home ${isActive("/") ? "icon-active" : ""}`}></i> Noticias
+        <a onClick={() => navigate("/webpage/news")} className={isActive("/webpage/news") ? "active" : ""}>
+          <i className="fa-solid fa-newspaper"></i> Noticias
         </a>
 
-        <a href="#" onClick={(e) => { e.preventDefault(); navigate("/webpage/location"); }} className={isActive("/webpage/location") ? "active" : ""}>
-          <i className={`fa-solid fa-phone ${isActive("/webpage/location") ? "icon-active" : ""}`}></i> Ubicación
+        <a onClick={() => navigate("/webpage/location")} className={isActive("/webpage/location") ? "active" : ""}>
+          <i className="fa-solid fa-location-dot"></i> Ubicación
         </a>
 
-         <a href="#" onClick={(e) => { e.preventDefault(); navigate("/webpage/contact"); }} className={isActive("/webpage/location") ? "active" : ""}>
-          <i className={`fa-solid fa-phone ${isActive("/webpage/contact") ? "icon-active" : ""}`}></i> Contacto
+        <a onClick={() => navigate("/webpage/contact")} className={isActive("/webpage/contact") ? "active" : ""}>
+          <i className="fa-solid fa-phone"></i> Contacto
         </a>
-
-
 
         <button className="nav-btn nav-close-btn" onClick={showNavbar}>
           <i className="fas fa-times"></i>
         </button>
       </nav>
 
+      {/* Botón hamburguesa */}
       <button className="nav-btn" onClick={showNavbar}>
         <i className="fas fa-bars"></i>
       </button>
+
     </header>
   );
 }

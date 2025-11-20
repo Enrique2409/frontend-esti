@@ -71,8 +71,6 @@ nav i.icon-active {
   background-color: var(--mainColorLight);
   
 }
-
-/* Botones hamburguesa */
 .nav-btn {
   background: none;
   border: none;
@@ -85,7 +83,6 @@ nav i.icon-active {
   display: none;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   nav {
     position: fixed;

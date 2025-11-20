@@ -1,5 +1,6 @@
 'use client';
 import Navbar from "../navbar/navbar";
+import Footer from "../footer/footer";
 
 const Location = () => {
     return (
@@ -18,6 +19,7 @@ const Location = () => {
                 referrerPolicy="no-referrer-when-downgrade"
             ></iframe>
         </div>
+         <Footer />
         </section> 
     );
 };

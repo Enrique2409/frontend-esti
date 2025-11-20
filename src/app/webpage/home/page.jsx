@@ -10,61 +10,32 @@ import Carousel from "react-bootstrap/Carousel";
 import "bootstrap/dist/css/bootstrap.min.css"; 
 import "../../Styles/pagehome.css";
 
+import { getCarousel, getCards, getNews
+} from "@/app/Service/PageService";
 
 export default function Home() {
+
   const [slides, setSlides] = useState([]);
   const [cards, setCards] = useState([]);
   const [news, setNews] = useState([]);
   const router = useRouter();
 
-useEffect(() => {
-  // Fetch para carrusel
-      fetch('http://localhost:8080/esti/content/category/Carrusel')
-    .then(response => response.json())
-    .then(data => {
-      const formatUrl = (path) => `http://localhost:8080${path}`;
-      const slidesData = data.map(slide => ({
-        ...slide,
-        imageURL: formatUrl(slide.imageURL),
-      }));
+  useEffect(() => {
+    const fetchData = async () => {
+      setSlides(await getCarousel());
+      setCards(await getCards());
+      setNews(await getNews());
+    };
 
-      setSlides(slidesData);
-    })
-    .catch(error => console.error('Error al cargar las tarjetas:', error));
-
-  // Si quieres cargar las cards (tarjetas), harías otro fetch similar:
-  fetch('http://localhost:8080/esti/content/category/Card')
-    .then(response => response.json())
-    .then(data => {
-      const formatUrl = (path) => `http://localhost:8080${path}`;
-      const cardsData = data.map(card => ({
-        ...card,
-        imageURL: formatUrl(card.imageURL),
-      }));
-
-      setCards(cardsData);
-    })
-    .catch(error => console.error('Error al cargar las tarjetas:', error));
-
-      fetch('http://localhost:8080/esti/content/category/News')
-    .then(response => response.json())
-    .then(data => {
-      const formatUrl = (path) => `http://localhost:8080${path}`;
-      const newsData = data.map(card => ({
-        ...card,
-        imageURL: formatUrl(news.imageURL),
-      }));
-
-      setNews(newsData);
-    })
-    .catch(error => console.error('Error al cargar las tarjetas:', error));
-}, []);
+    fetchData();
+  }, []);
 
   return (
     <section>
-        <Navbar />
+      <Navbar />
+
       {/* ---------- Carrusel ---------- */}
-       <div className="customCarousel">
+      <div className="customCarousel">
         <Carousel interval={5000} fade controls>
           {slides.map((slide) => (
             <Carousel.Item key={slide.id}>
@@ -118,6 +89,7 @@ useEffect(() => {
           ))}
         </div>
       </div>
+
       <Footer />
     </section>
   );
