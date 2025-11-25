@@ -1,7 +1,7 @@
 // src/services/PeriodService.js
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/esti";
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const periodURL = `${baseURL}/period`;
 
 const getAuthToken = () => localStorage.getItem("token");

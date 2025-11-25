@@ -1,4 +1,5 @@
 import Navbar from "./components/navbar";
+import LockGrades from "./components/LockGrades";
 
 export default function PageAdmin() {
     return (
@@ -93,6 +94,7 @@ export default function PageAdmin() {
                         </button>
                     </div>
                 </div>
+                <LockGrades />
             </div>
         </div>
     );

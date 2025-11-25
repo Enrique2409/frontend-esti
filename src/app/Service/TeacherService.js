@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/esti";
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const teacherURL = `${baseURL}/teacher`;
 
 const getAuthToken = () => localStorage.getItem("token");
@@ -135,11 +135,11 @@ export const deleteTeacher = async (idTeacher) => {
 
 };
 export const getTeacherById = async (id) => {
-  try {
-    const response = await axios.get(`${teacherURL}/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error("Error al obtener el profesor por ID:", error);
-    throw error;
-  }
+    try {
+        const response = await axios.get(`${teacherURL}/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error al obtener el profesor por ID:", error);
+        throw error;
+    }
 };

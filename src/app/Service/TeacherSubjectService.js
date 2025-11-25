@@ -1,7 +1,7 @@
 // TeacherSubjectService.js
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/esti";
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const teacherSubjectURL = `${baseURL}/tsg`;
 
 // Igual que en TeacherService

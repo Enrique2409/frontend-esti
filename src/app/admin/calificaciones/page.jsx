@@ -26,6 +26,8 @@ import {
   searchTeachers,
 } from "@/app/Service/TeacherService";
 
+import { getSystemConfig, verifyLockGrades } from "@/app/Service/SystemConfigService";
+
 import { getSubjectsByTeacher } from "@/app/Service/TeacherSubjectService";
 import { getPeriodsPaginated } from "@/app/Service/PeriodService";
 
@@ -40,6 +42,7 @@ export default function PageCardex() {
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [systemConfig, setSystemConfig] = useState(null);
 
   // ------------------ Formulario de Cardex ------------------
   const initialFormState = {
@@ -132,7 +135,17 @@ export default function PageCardex() {
 
   useEffect(() => {
     fetchCardex(0, searchTerm);
+    verifyStatusSystem();
   }, [pageSize, searchTerm]);
+
+  const verifyStatusSystem = async () => {
+    try {
+      const config = await getSystemConfig();
+      setSystemConfig(config);
+    } catch (error) {
+      console.error("Error al obtener configuración del sistema:", error);
+    }
+  };
 
   const handleNextPage = () => {
     if (pagination.currentPage + 1 < pagination.totalPages) {
@@ -285,6 +298,16 @@ export default function PageCardex() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const userRole = localStorage.getItem("userRole");
+    if (userRole !== "TEACHER" && systemConfig?.lockGrades) {
+      Swal.fire({
+        icon: "error",
+        title: "Acceso denegado",
+        text: "El periodo de calificaciones ha sido bloqueado por el administrador.",
+      });
+      return;
+    }
 
     if (!formData.studentId) {
       Swal.fire("Error", "Debes seleccionar un alumno.", "error");
@@ -739,6 +762,18 @@ export default function PageCardex() {
             : "Nuevo registro de Cardex"
         }
       >
+        {systemConfig?.lockGrades && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
+            <div className="flex-items-center">
+              <span className="text-2xl mr-3">⚠️</span>
+              <div>
+                <p className="font-semibold text-red-800">Periodo de calificaciones bloqueado</p>
+                <p>El periodo de calificaciones ha sido cerrado por Administración</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Alumno */}
           <div className="space-y-2 border-b border-gray-200 pb-4">
@@ -1379,3 +1414,5 @@ export default function PageCardex() {
     </div>
   );
 }
+
+

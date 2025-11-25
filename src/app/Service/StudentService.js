@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/esti";
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const studentURL = `${baseURL}/student`;
 
 const getAuthToken = () => localStorage.getItem("token");
@@ -101,23 +101,23 @@ export const searchStudents = async (keyword, page = 0, size = 10, setStudents, 
 
 
 export const getStudentsByGroup = async (groupId, setStudents) => {
-  try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      setStudents([]);
-      return;
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log("No hay token de autenticación");
+            setStudents([]);
+            return;
+        }
+
+        const response = await axios.get(`${studentURL}/group/${groupId}`, {
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+
+        setStudents(response.data);
+    } catch (error) {
+        console.error("Error al obtener alumnos por grupo:", error);
+        setStudents([]);
     }
-
-    const response = await axios.get(`${studentURL}/group/${groupId}`, {
-      headers: { "Authorization": `Bearer ${token}` },
-    });
-
-    setStudents(response.data);
-  } catch (error) {
-    console.error("Error al obtener alumnos por grupo:", error);
-    setStudents([]);
-  }
 };
 
 export const createStudent = async (student) => {
@@ -138,7 +138,7 @@ export const createStudent = async (student) => {
 
 export const updateStudent = async (student) => {
     try {
-        const response = await axios.patch(`${studentURL}/${student.idStudent}`, student, { 
+        const response = await axios.patch(`${studentURL}/${student.idStudent}`, student, {
             headers: {
                 "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
