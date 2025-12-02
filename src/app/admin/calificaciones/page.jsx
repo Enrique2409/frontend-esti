@@ -26,7 +26,7 @@ import {
   searchTeachers,
 } from "@/app/Service/TeacherService";
 
-import { getSystemConfig, verifyLockGrades } from "@/app/Service/SystemConfigService";
+import { getSystemConfig, verifyLockGrades, canModifyGrades } from "@/app/Service/SystemConfigService";
 
 import { getSubjectsByTeacher } from "@/app/Service/TeacherSubjectService";
 import { getPeriodsPaginated } from "@/app/Service/PeriodService";
@@ -112,6 +112,31 @@ export default function PageCardex() {
   });
   const [periodsPageSize] = useState(10);
 
+  const [gradesLocked, setGradesLocked] = useState(false);
+  const [showLockOverlay, setShowLockOverlay] = useState(false);
+  const [checkingLock, setCheckingLock] = useState(false);
+
+  useEffect(() => {
+    checkIfLocked();
+  }, []);
+
+  const checkIfLocked = async () => {
+    setCheckingLock(true);
+    try {
+      const canModify = await canModifyGrades();
+      const isLocked = !canModify;
+      setGradesLocked(isLocked);
+      setShowLockOverlay(isLocked);
+      console.log("¿Puede modificar calificaciones?", canModify);
+    } catch (error) {
+      console.error("Error verificando bloqueo", error);
+      setGradesLocked(false);
+      setShowLockOverlay(false);
+    } finally {
+      setCheckingLock(false);
+    }
+  }
+
   // ================== CARGA PRINCIPAL DE CARDEX ==================
   const fetchCardex = async (page = 0, keyword = "") => {
     try {
@@ -175,6 +200,22 @@ export default function PageCardex() {
   };
 
   const handleOpenModal = async (cardex = null) => {
+    const canModify = await canModifyGrades();
+    if (gradesLocked) {
+      Swal.fire({
+        icon: "error",
+        title: "Acceso denegado",
+        html: `
+        <p class= "text-gray-700 mb-2">El periodo de calificaciones ha sido cerrado por administración.</p>
+        <p class= "text-sm text-gray-500">No puedes crear ni modificar calificaciones en este momento.</p>
+      `,
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "Entendido",
+      });
+      return;
+    }
+
+
     if (cardex) {
       // Editar
       const newForm = {
@@ -299,12 +340,16 @@ export default function PageCardex() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const userRole = localStorage.getItem("userRole");
-    if (userRole !== "TEACHER" && systemConfig?.lockGrades) {
+    if (gradesLocked) {
       Swal.fire({
         icon: "error",
         title: "Acceso denegado",
-        text: "El periodo de calificaciones ha sido bloqueado por el administrador.",
+        html: `
+        <p class= "text-gray-700 mb-2">El peridoo de calificaciones ha sido cerrado por administración.</p>
+        <p class= "text-sm text-gray-500">No puedes crear ni modificar calificaciones en este momento.</p>
+      `,
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "Entendido",
       });
       return;
     }
@@ -363,11 +408,30 @@ export default function PageCardex() {
       );
     } catch (error) {
       console.error("Error al guardar el cardex:", error);
-      Swal.fire("Error", "No se pudo guardar el registro de cardex", "error");
+
+      if (error.response?.status === 403) {
+        Swal.fire({
+          icon: "error",
+          title: "Acceso denegado",
+          text: error.response?.data?.error || "El periodo de calificaciones ha sido cerrado por administración.",
+        });
+      } else {
+        Swal.fire("Error", "No se pudo guardar el registro de cardex", "error");
+      }
     }
   };
 
   const handleDeleteCardex = async (idCardex) => {
+
+    if (gradesLocked) {
+      Swal.fire({
+        icon: "error",
+        title: "Acceso denegado",
+        text: "El periodo de calificaciones ha sido cerrado por administración.",
+      });
+      return;
+    }
+
     const result = await Swal.fire({
       title: "¿Estás seguro?",
       text: "No podrás revertir esto.",
@@ -602,6 +666,24 @@ export default function PageCardex() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
+      {gradesLocked && showLockOverlay && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <p className="text-lg font-semibold mb-4">
+              Calificaciones bloqueadas
+            </p>
+            <p className="text-gray-600 mb-4">
+              Las calificaciones están bloqueadas. No se pueden modificar.
+            </p>
+            <button
+              onClick={() => setShowLockOverlay(false)}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
       <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
         <TableHeader
           title="Cardex"

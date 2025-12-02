@@ -1,4 +1,3 @@
-// TeacherSubjectService.js
 import axios from "axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
@@ -6,7 +5,6 @@ const teacherSubjectURL = `${baseURL}/tsg`;
 
 // Igual que en TeacherService
 const getAuthToken = () => localStorage.getItem("token");
-console.log("Token de autenticación (TSG):", getAuthToken());
 
 const getAuthHeaders = () => ({
   "Authorization": `Bearer ${getAuthToken()}`,

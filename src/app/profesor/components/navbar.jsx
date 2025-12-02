@@ -12,7 +12,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    router.push("/");
+    window.location.href = "/";
   };
 
   const menuItems = [
@@ -59,18 +59,16 @@ const Navbar = () => {
           <Link
             key={item.path}
             href={item.path}
-            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-              isActive(item.path)
+            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActive(item.path)
                 ? "bg-blue-600 text-white"
                 : "text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-200 dark:hover:bg-gray-700"
-            }`}
+              }`}
           >
             <svg
-              className={`w-5 h-5 mr-3 ${
-                isActive(item.path)
+              className={`w-5 h-5 mr-3 ${isActive(item.path)
                   ? "text-white"
                   : "text-gray-500 dark:text-gray-400"
-              }`}
+                }`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

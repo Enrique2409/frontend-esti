@@ -53,28 +53,48 @@ export default function Login() {
 
       if (response.ok) {
         const data = await response.json();
+        //log temporal
+        console.log("=== RESPUESTA DEL BACKEND ===");
+        console.log("Data completa:", data);
+        console.log("ID:", data.id);
+        console.log("Username:", data.username);
+        console.log("Role:", data.role);
+        console.log("Token:", data.token);
+        console.log("============================");
+
         const { token, role, id, username } = data;
 
         localStorage.setItem("token", token);
         localStorage.setItem("role", role);
         localStorage.setItem("userId", id);
-        console.log("Token de autenticación para iniciar sesión:", token);
-        console.log("Usuario logueado:", { id, role, username });
+        localStorage.setItem("username", username);
+        // ✅ VERIFICAR LO QUE SE GUARDÓ
+        console.log("=== LOCALSTORAGE DESPUÉS DE GUARDAR ===");
+        console.log("token:", localStorage.getItem("token"));
+        console.log("role:", localStorage.getItem("role"));
+        console.log("userId:", localStorage.getItem("userId"));
+        console.log("username:", localStorage.getItem("username"));
+        console.log("=======================================");
 
         if (role === "ADMIN") {
+          console.log("Redirigiendo a admin");
           router.push("/admin/inicio");
         } else if (role === "TEACHER") {
+          console.log("Redirigiendo a profesor");
           router.push("/profesor/inicio");
         } else {
+          console.log("Rol no reconocido");
           setError("Rol no reconocido.");
           setIsLoading(false);
         }
       } else {
         const errorData = await response.json();
+        console.error("Error en el backend:", errorData);
         setError(errorData.message || "Error al iniciar sesión.");
         setIsLoading(false);
       }
     } catch (error) {
+      console.error("Error en el catch", error);
       setError("Error, corrreo o contraseña incorrectos.");
       setIsLoading(false);
     } finally {

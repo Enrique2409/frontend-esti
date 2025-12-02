@@ -5,7 +5,6 @@ const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const periodURL = `${baseURL}/period`;
 
 const getAuthToken = () => localStorage.getItem("token");
-console.log("Token de autenticación:", getAuthToken());
 
 /**
  * Obtiene periodos paginados

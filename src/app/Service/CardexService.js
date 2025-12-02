@@ -1,11 +1,31 @@
 // CardexService.js
 import axios from "axios";
+import { verifyLockGrades } from "./SystemConfigService";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const cardexURL = `${baseURL}/cardex`;
 
 const getAuthToken = () => localStorage.getItem("token");
-console.log("Token de autenticación (cardex):", getAuthToken());
+
+const isTeacher = () => {
+  const role = localStorage.getItem("role");
+  return role === "TEACHER";
+};
+
+export const canModifyGrades = async () => {
+  if (!isTeacher()) {
+    return true; // Los admins siempre pueden modificar
+  }
+
+  try {
+    const isLocked = await verifyLockGrades();
+    return !isLocked; // Retorna true si NO está bloqueado
+  } catch (error) {
+    console.error("Error verificando bloqueo:", error);
+    return false; // Por seguridad, no permitir si hay error
+  }
+};
+
 
 /**
  * Obtener cardex paginado

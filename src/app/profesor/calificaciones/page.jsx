@@ -29,6 +29,9 @@ import {
 
 import { getSubjectsByTeacher } from "@/app/Service/TeacherSubjectService";
 import { getPeriodsPaginated } from "@/app/Service/PeriodService";
+import { verifyLockGrades, canModifyGrades } from "@/app/Service/SystemConfigService";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function PageCardex() {
   // ------- Auth / contexto de usuario -------
@@ -116,6 +119,31 @@ export default function PageCardex() {
   });
   const [periodsPageSize] = useState(10);
 
+  const [gradesLocked, setGradesLocked] = useState(false);
+  const [showLockOverlay, setShowLockOverlay] = useState(false);
+  const [checkingLock, setCheckingLock] = useState(false);
+
+  useEffect(() => {
+    checkIfLocked();
+  }, []);
+
+  const checkIfLocked = async () => {
+    setCheckingLock(true);
+    try {
+      const canModify = await canModifyGrades();
+      const isLocked = !canModify;
+      setGradesLocked(isLocked);
+      setShowLockOverlay(isLocked);
+      console.log("¿Puede modificar calificaciones?", canModify);
+    } catch (error) {
+      console.error("Error verificando bloqueo", error);
+      setGradesLocked(false);
+      setShowLockOverlay(false);
+    } finally {
+      setCheckingLock(false);
+    }
+  }
+
   // ================== AUTH: leer role e id del localStorage ==================
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -201,8 +229,8 @@ export default function PageCardex() {
   const visibleCardex =
     role === "TEACHER" && teacherId
       ? cardexList.filter(
-          (c) => Number(c.idTeacher) === Number(teacherId)
-        )
+        (c) => Number(c.idTeacher) === Number(teacherId)
+      )
       : cardexList;
 
   // ================== FORMULARIO PRINCIPAL (CREAR / EDITAR) ==================
@@ -224,6 +252,21 @@ export default function PageCardex() {
         "No se pudieron cargar los datos del profesor. Intenta de nuevo.",
         "error"
       );
+      return;
+    }
+
+    const canModify = await canModifyGrades();
+    if (gradesLocked) {
+      Swal.fire({
+        icon: "error",
+        title: "Acceso denegado",
+        html: `
+        <p class= "text-gray-700 mb-2">El periodo de calificaciones ha sido cerrado por administración.</p>
+        <p class= "text-sm text-gray-500">No puedes crear ni modificar calificaciones en este momento.</p>
+      `,
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "Entendido",
+      });
       return;
     }
 
@@ -365,6 +408,20 @@ export default function PageCardex() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (gradesLocked) {
+      Swal.fire({
+        icon: "error",
+        title: "Acceso denegado",
+        html: `
+        <p class= "text-gray-700 mb-2">El peridoo de calificaciones ha sido cerrado por administración.</p>
+        <p class= "text-sm text-gray-500">No puedes crear ni modificar calificaciones en este momento.</p>
+      `,
+        confirmButtonColor: "#dc2626",
+        confirmButtonText: "Entendido",
+      });
+      return;
+    }
+
     if (!formData.studentId) {
       Swal.fire("Error", "Debes seleccionar un alumno.", "error");
       return;
@@ -422,6 +479,14 @@ export default function PageCardex() {
   };
 
   const handleDeleteCardex = async (idCardex) => {
+    if (gradesLocked) {
+      Swal.fire({
+        icon: "error",
+        title: "Acceso denegado",
+        text: "El periodo de calificaciones ha sido cerrado por administración.",
+      });
+      return;
+    }
     const result = await Swal.fire({
       title: "¿Estás seguro?",
       text: "No podrás revertir esto.",
@@ -447,6 +512,43 @@ export default function PageCardex() {
       console.error("Error eliminando cardex:", error);
       Swal.fire("Error", "No se pudo eliminar el registro de cardex.", "error");
     }
+  };
+
+  const handlePrint = () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Reporte de Calificaciones", 14, 22);
+
+    doc.setFontSize(11);
+    doc.text(`Profesor: ${currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "N/A"}`, 14, 30);
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 36);
+
+    const tableColumn = ["Alumno", "Grupo", "Grado", "Materia", "Periodo", "P1", "P2", "P3", "Final"];
+    const tableRows = [];
+
+    visibleCardex.forEach(c => {
+      const rowData = [
+        `${c.studentName} ${c.studentLastNamePaternal} ${c.studentLastNameMaternal}`,
+        c.groupName,
+        c.grade,
+        c.subjectName,
+        c.period,
+        c.firstPartial ?? 0,
+        c.secondPartial ?? 0,
+        c.thirdPartial ?? 0,
+        c.finalGrade ?? 0
+      ];
+      tableRows.push(rowData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 44,
+    });
+
+    doc.save("calificaciones.pdf");
   };
 
   // ================== SELECTOR DE ALUMNOS ==================
@@ -665,6 +767,24 @@ export default function PageCardex() {
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
+      {gradesLocked && showLockOverlay && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <p className="text-lg font-semibold mb-4">
+              Calificaciones bloqueadas
+            </p>
+            <p className="text-gray-600 mb-4">
+              Las calificaciones están bloqueadas. No se pueden modificar.
+            </p>
+            <button
+              onClick={() => setShowLockOverlay(false)}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
       <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
         <TableHeader
           title="Cardex"
@@ -674,7 +794,18 @@ export default function PageCardex() {
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="p-6">
-            <SearchBar onSearch={setSearchTerm} />
+            <div className="flex justify-between items-center mb-4">
+              <SearchBar onSearch={setSearchTerm} />
+              <button
+                onClick={handlePrint}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Imprimir PDF
+              </button>
+            </div>
 
             <div className="mb-4">
               <label className="mr-2 font-medium text-gray-700">
