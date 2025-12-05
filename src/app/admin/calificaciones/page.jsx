@@ -14,6 +14,11 @@ import {
   createCardex,
   updateCardex,
   deleteCardex,
+  getCardexByGroup,
+  getCardexByStudent,
+  getCardexByTeacher,
+  getCardexBySubject,
+  searchStudentsByTeacher,
 } from "@/app/Service/CardexService";
 
 import {
@@ -24,7 +29,11 @@ import {
 import {
   getTeachersPaginated,
   searchTeachers,
+  getTeacherById,
 } from "@/app/Service/TeacherService";
+
+import { getAllGroups } from "@/app/Service/GroupService";
+import { searchSubjects } from "@/app/Service/SubjectService";
 
 import { getSystemConfig, verifyLockGrades, canModifyGrades } from "@/app/Service/SystemConfigService";
 
@@ -43,6 +52,34 @@ export default function PageCardex() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [systemConfig, setSystemConfig] = useState(null);
+
+  // ------------------ Filtros Avanzados ------------------
+  const [filterMode, setFilterMode] = useState("all"); // all, teacher, student, group, subject
+  const [filterTeacher, setFilterTeacher] = useState(null);
+  const [filterStudent, setFilterStudent] = useState(null);
+  const [filterGroup, setFilterGroup] = useState(null); // Objeto grupo o ID
+  const [filterSubject, setFilterSubject] = useState(null);
+
+  // Filtros específicos para "Por Profesor"
+  const [filterTeacherSubject, setFilterTeacherSubject] = useState(null); // Materia del profesor
+  const [filterTeacherSubjects, setFilterTeacherSubjects] = useState([]); // Lista de materias/grupos del profesor para el filtro
+  const [filterTeacherGroup, setFilterTeacherGroup] = useState(""); // Nombre del grupo (string)
+  const [filterTeacherGrade, setFilterTeacherGrade] = useState("");
+  const [filterTeacherKeyword, setFilterTeacherKeyword] = useState("");
+
+  // Listas para selectores de filtro
+  const [allGroups, setAllGroups] = useState([]);
+
+  // Selector de Materias (para filtro)
+  const [isSubjectFilterSelectorOpen, setIsSubjectFilterSelectorOpen] = useState(false);
+  const [subjectsFilter, setSubjectsFilter] = useState([]);
+  const [subjectsFilterPagination, setSubjectsFilterPagination] = useState({
+    totalPages: 0,
+    totalElements: 0,
+    currentPage: 0,
+  });
+  const [subjectsFilterPageSize] = useState(10);
+  const [subjectsFilterSearchTerm, setSubjectsFilterSearchTerm] = useState("");
 
   // ------------------ Formulario de Cardex ------------------
   const initialFormState = {
@@ -73,6 +110,8 @@ export default function PageCardex() {
     thirdPartial: 0,
     finalGrade: 0,
   };
+
+  const [isSelectingForFilter, setIsSelectingForFilter] = useState(false);
 
   const [formData, setFormData] = useState(initialFormState);
 
@@ -118,6 +157,7 @@ export default function PageCardex() {
 
   useEffect(() => {
     checkIfLocked();
+    getAllGroups(setAllGroups);
   }, []);
 
   const checkIfLocked = async () => {
@@ -138,17 +178,55 @@ export default function PageCardex() {
   }
 
   // ================== CARGA PRINCIPAL DE CARDEX ==================
+  // ================== CARGA PRINCIPAL DE CARDEX ==================
   const fetchCardex = async (page = 0, keyword = "") => {
     try {
-      if (keyword.trim() !== "") {
-        await searchCardex(
-          keyword,
+      if (filterMode === "all") {
+        if (keyword.trim() !== "") {
+          await searchCardex(
+            keyword,
+            page,
+            pageSize,
+            setCardexList,
+            setPagination
+          );
+        } else {
+          await getCardexPaginated(page, pageSize, setCardexList, setPagination);
+        }
+      } else if (filterMode === "teacher" && filterTeacher) {
+        // Filtro por profesor (y sus sub-filtros)
+        // searchStudentsByTeacher espera: teacherId, subjectId, groupName, grade, keyword, page, size
+        const subjectId = filterTeacherSubject?.subject?.idSubject || filterTeacherSubject?.idSubject || null;
+
+        await searchStudentsByTeacher(
+          filterTeacher.idTeacher,
+          subjectId,
+          filterTeacherGroup || null,
+          filterTeacherGrade || null,
+          filterTeacherKeyword || null,
           page,
           pageSize,
           setCardexList,
           setPagination
         );
+      } else if (filterMode === "student" && filterStudent) {
+        const list = await getCardexByStudent(filterStudent.idStudent);
+        setCardexList(list);
+        // Simular paginación para lista completa
+        setPagination({ totalPages: 1, totalElements: list.length, currentPage: 0 });
+      } else if (filterMode === "group" && filterGroup) {
+        // filterGroup puede ser el objeto entero o ID, asumimos objeto por el selector
+        const groupId = filterGroup.idGroup || filterGroup;
+        const list = await getCardexByGroup(groupId);
+        setCardexList(list);
+        setPagination({ totalPages: 1, totalElements: list.length, currentPage: 0 });
+      } else if (filterMode === "subject" && filterSubject) {
+        const list = await getCardexBySubject(filterSubject.idSubject);
+        setCardexList(list);
+        setPagination({ totalPages: 1, totalElements: list.length, currentPage: 0 });
       } else {
+        // Fallback: si hay modo seleccionado pero no entidad, mostramos todo o vacío?
+        // Mostramos todo paginado por defecto
         await getCardexPaginated(page, pageSize, setCardexList, setPagination);
       }
     } catch (error) {
@@ -161,7 +239,7 @@ export default function PageCardex() {
   useEffect(() => {
     fetchCardex(0, searchTerm);
     verifyStatusSystem();
-  }, [pageSize, searchTerm]);
+  }, [pageSize, searchTerm, filterMode, filterTeacher, filterStudent, filterGroup, filterSubject]); // Agregamos dependencias de filtros principales
 
   const verifyStatusSystem = async () => {
     try {
@@ -508,16 +586,22 @@ export default function PageCardex() {
   };
 
   const handleSelectStudent = (student) => {
-    setFormData((prev) => ({
-      ...prev,
-      studentId: student.idStudent,
-      studentName: student.name,
-      studentLastNamePaternal: student.lastNamePaternal,
-      studentLastNameMaternal: student.lastNameMaternal,
-      groupName: student.groupName ?? "",
-      grade: student.grade ?? "",
-    }));
-    setIsStudentSelectorOpen(false);
+    if (isSelectingForFilter) {
+      setFilterStudent(student);
+      setIsSelectingForFilter(false);
+      setIsStudentSelectorOpen(false);
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        studentId: student.idStudent,
+        studentName: student.name,
+        studentLastNamePaternal: student.lastNamePaternal,
+        studentLastNameMaternal: student.lastNameMaternal,
+        groupName: student.groupName ?? "",
+        grade: student.grade ?? "",
+      }));
+      setIsStudentSelectorOpen(false);
+    }
   };
 
   // ================== SELECTOR DE PROFESORES ==================
@@ -568,17 +652,38 @@ export default function PageCardex() {
     }
   };
 
-  const handleSelectTeacher = (teacher) => {
-    setFormData((prev) => ({
-      ...prev,
-      idTeacher: teacher.idTeacher,
-      teacherName: teacher.name,
-      teacherLastName: teacher.lastName,
-      teacherSubjectId: "",
-      subjectName: "",
-    }));
-    setTeacherSubjects([]);
-    setIsTeacherSelectorOpen(false);
+  const handleSelectTeacher = async (teacher) => {
+    if (isSelectingForFilter) {
+      setFilterTeacher(teacher);
+      // Reset sub-filters
+      setFilterTeacherSubject(null);
+      setFilterTeacherGroup("");
+      setFilterTeacherGrade("");
+      setFilterTeacherKeyword("");
+
+      // Fetch subjects for this teacher to populate dropdowns
+      try {
+        const list = await getSubjectsByTeacher(teacher.idTeacher);
+        setFilterTeacherSubjects(list || []);
+      } catch (error) {
+        console.error("Error al cargar materias del profesor para filtro:", error);
+        setFilterTeacherSubjects([]);
+      }
+
+      setIsSelectingForFilter(false);
+      setIsTeacherSelectorOpen(false);
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        idTeacher: teacher.idTeacher,
+        teacherName: teacher.name,
+        teacherLastName: teacher.lastName,
+        teacherSubjectId: "",
+        subjectName: "",
+      }));
+      setTeacherSubjects([]);
+      setIsTeacherSelectorOpen(false);
+    }
   };
 
   // ================== SELECTOR DE MATERIAS (POR PROFESOR) ==================
@@ -606,17 +711,34 @@ export default function PageCardex() {
     }
   };
 
+  const openFilterSubjectSelector = async () => {
+    if (!filterTeacher) {
+      Swal.fire("Atención", "Primero debes seleccionar un profesor para el filtro.", "warning");
+      return;
+    }
+    // Usamos la lista ya cargada en filterTeacherSubjects
+    setTeacherSubjects(filterTeacherSubjects);
+    setIsSubjectSelectorOpen(true);
+    setIsSelectingForFilter(true);
+  };
+
   const handleSelectSubject = (ts) => {
-    const subjectLabel =
-      ts.subjectName || (ts.subject && ts.subject.name) || "";
+    if (isSelectingForFilter) {
+      setFilterTeacherSubject(ts);
+      setIsSubjectSelectorOpen(false);
+      setIsSelectingForFilter(false);
+    } else {
+      const subjectLabel =
+        ts.subjectName || (ts.subject && ts.subject.name) || "";
 
-    setFormData((prev) => ({
-      ...prev,
-      teacherSubjectId: ts.idTeacherSubject,
-      subjectName: subjectLabel,
-    }));
+      setFormData((prev) => ({
+        ...prev,
+        teacherSubjectId: ts.idTeacherSubject,
+        subjectName: subjectLabel,
+      }));
 
-    setIsSubjectSelectorOpen(false);
+      setIsSubjectSelectorOpen(false);
+    }
   };
 
   // ================== SELECTOR DE PERIODOS ==================
@@ -662,6 +784,45 @@ export default function PageCardex() {
     setIsPeriodSelectorOpen(false);
   };
 
+  // ================== SELECTOR DE MATERIAS (FILTRO) ==================
+  const fetchSubjectsFilter = async (page = 0, keyword = "") => {
+    try {
+      await searchSubjects(
+        keyword,
+        page,
+        subjectsFilterPageSize,
+        setSubjectsFilter,
+        setSubjectsFilterPagination
+      );
+    } catch (error) {
+      console.error("Error al buscar materias:", error);
+      setSubjectsFilter([]);
+    }
+  };
+
+  useEffect(() => {
+    if (isSubjectFilterSelectorOpen) {
+      fetchSubjectsFilter(0, subjectsFilterSearchTerm);
+    }
+  }, [isSubjectFilterSelectorOpen, subjectsFilterSearchTerm, subjectsFilterPageSize]);
+
+  const handleSubjectsFilterNextPage = () => {
+    if (subjectsFilterPagination.currentPage + 1 < subjectsFilterPagination.totalPages) {
+      fetchSubjectsFilter(subjectsFilterPagination.currentPage + 1, subjectsFilterSearchTerm);
+    }
+  };
+
+  const handleSubjectsFilterPrevPage = () => {
+    if (subjectsFilterPagination.currentPage > 0) {
+      fetchSubjectsFilter(subjectsFilterPagination.currentPage - 1, subjectsFilterSearchTerm);
+    }
+  };
+
+  const handleSelectSubjectFilter = (subject) => {
+    setFilterSubject(subject);
+    setIsSubjectFilterSelectorOpen(false);
+  };
+
   // ================== RENDER ==================
   return (
     <div className="min-h-screen bg-white">
@@ -693,6 +854,183 @@ export default function PageCardex() {
 
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="p-6">
+            {/* Barra de Filtros */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex flex-wrap gap-4 items-center mb-4">
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1">Modo de Filtrado</label>
+                  <select
+                    value={filterMode}
+                    onChange={(e) => {
+                      setFilterMode(e.target.value);
+                      setFilterTeacher(null);
+                      setFilterStudent(null);
+                      setFilterGroup(null);
+                      setFilterSubject(null);
+                      setSearchTerm("");
+                    }}
+                    className="border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="all">General (Todos)</option>
+                    <option value="teacher">Por Profesor (Avanzado)</option>
+                    <option value="student">Por Alumno</option>
+                    <option value="group">Por Grupo</option>
+                    <option value="subject">Por Materia</option>
+                  </select>
+                </div>
+
+                {filterMode === "teacher" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end w-full">
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-700 mb-1">Profesor</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={filterTeacher ? `${filterTeacher.name} ${filterTeacher.lastName}` : ""}
+                          placeholder="Seleccionar profesor..."
+                          className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full"
+                        />
+                        <button
+                          onClick={() => {
+                            setIsSelectingForFilter(true);
+                            setIsTeacherSelectorOpen(true);
+                          }}
+                          className="bg-indigo-600 text-white px-3 py-2 rounded-md hover:bg-indigo-700 shrink-0"
+                        >
+                          Buscar
+                        </button>
+                      </div>
+                    </div>
+
+                    {filterTeacher && (
+                      <>
+                        <div className="flex flex-col">
+                          <label className="text-sm font-medium text-gray-700 mb-1">Materia</label>
+                          <button
+                            onClick={openFilterSubjectSelector}
+                            className="border border-gray-300 rounded-md px-3 py-2 bg-white text-left w-full truncate"
+                          >
+                            {filterTeacherSubject ? (filterTeacherSubject.subjectName || filterTeacherSubject.subject?.name) : "Todas"}
+                          </button>
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-sm font-medium text-gray-700 mb-1">Grado y Grupo</label>
+                          <select
+                            value={filterTeacherGroup && filterTeacherGrade ? `${filterTeacherGrade}-${filterTeacherGroup}` : ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val) {
+                                const [g, gr] = val.split("-");
+                                setFilterTeacherGrade(g);
+                                setFilterTeacherGroup(gr);
+                              } else {
+                                setFilterTeacherGrade("");
+                                setFilterTeacherGroup("");
+                              }
+                            }}
+                            className="border border-gray-300 rounded-md px-3 py-2 bg-white w-full"
+                          >
+                            <option value="">Todos</option>
+                            {[...new Set(filterTeacherSubjects.map(ts => {
+                              const grade = ts.grade || (ts.group && ts.group.grade) || "";
+                              const group = ts.groupName || (ts.group && ts.group.groupName) || "";
+                              return (grade && group) ? `${grade}-${group}` : "";
+                            }).filter(Boolean))].sort().map(gg => {
+                              const [grade, group] = gg.split("-");
+                              return <option key={gg} value={gg}>{grade}° {group}</option>
+                            })}
+                          </select>
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-sm font-medium text-gray-700 mb-1">Palabra Clave</label>
+                          <input
+                            type="text"
+                            value={filterTeacherKeyword}
+                            onChange={(e) => setFilterTeacherKeyword(e.target.value)}
+                            className="border border-gray-300 rounded-md px-3 py-2 w-full"
+                            placeholder="Nombre alumno..."
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <button
+                            onClick={() => fetchCardex(0)}
+                            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 w-full"
+                          >
+                            Aplicar Filtros
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {filterMode === "student" && (
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">Alumno</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={filterStudent ? `${filterStudent.name} ${filterStudent.lastNamePaternal}` : ""}
+                        placeholder="Seleccionar alumno..."
+                        className="border border-gray-300 rounded-md px-3 py-2 bg-white w-64"
+                      />
+                      <button
+                        onClick={() => {
+                          setIsSelectingForFilter(true);
+                          setIsStudentSelectorOpen(true);
+                        }}
+                        className="bg-indigo-600 text-white px-3 py-2 rounded-md hover:bg-indigo-700"
+                      >
+                        Buscar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {filterMode === "group" && (
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">Grupo</label>
+                    <select
+                      value={filterGroup ? filterGroup.idGroup : ""}
+                      onChange={(e) => {
+                        const g = allGroups.find(x => x.idGroup === Number(e.target.value));
+                        setFilterGroup(g);
+                      }}
+                      className="border border-gray-300 rounded-md px-3 py-2 bg-white w-64"
+                    >
+                      <option value="">Seleccionar grupo...</option>
+                      {allGroups.map(g => (
+                        <option key={g.idGroup} value={g.idGroup}>{g.groupName}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {filterMode === "subject" && (
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-700 mb-1">Materia</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={filterSubject ? filterSubject.name : ""}
+                        placeholder="Seleccionar materia..."
+                        className="border border-gray-300 rounded-md px-3 py-2 bg-white w-64"
+                      />
+                      <button
+                        onClick={() => setIsSubjectFilterSelectorOpen(true)}
+                        className="bg-indigo-600 text-white px-3 py-2 rounded-md hover:bg-indigo-700"
+                      >
+                        Buscar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
             <SearchBar onSearch={setSearchTerm} />
 
             <div className="mb-4">
@@ -1486,6 +1824,81 @@ export default function PageCardex() {
                 periodsPagination.currentPage + 1 >=
                 periodsPagination.totalPages
               }
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================== MODAL SELECTOR MATERIAS (FILTRO) ================== */}
+      <Modal
+        isOpen={isSubjectFilterSelectorOpen}
+        onClose={() => setIsSubjectFilterSelectorOpen(false)}
+        title="Seleccionar materia (Filtro)"
+      >
+        <div className="w-[90vw] max-w-6xl">
+          <SearchBar onSearch={setSubjectsFilterSearchTerm} />
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full table-auto divide-y divide-gray-200 whitespace-nowrap">
+              <thead className="bg-gray-50">
+                <tr>
+                  {["ID", "Nombre", "Semestre", "Créditos", "Acciones"].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {subjectsFilter.map((s) => (
+                  <tr key={s.idSubject} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm text-gray-900">{s.idSubject}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{s.name}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{s.semester}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{s.credits}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectSubjectFilter(s)}
+                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
+                      >
+                        Seleccionar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {subjectsFilter.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-2 text-center text-sm text-gray-500">
+                      No se encontraron materias.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-between items-center mt-4">
+            <button
+              type="button"
+              onClick={handleSubjectsFilterPrevPage}
+              disabled={subjectsFilterPagination.currentPage === 0}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {subjectsFilterPagination.currentPage + 1} de {subjectsFilterPagination.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={handleSubjectsFilterNextPage}
+              disabled={subjectsFilterPagination.currentPage + 1 >= subjectsFilterPagination.totalPages}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
             >
               Siguiente
