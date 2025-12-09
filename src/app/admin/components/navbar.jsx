@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import "../../Styles/navbar.css";
+import { FaChalkboardTeacher } from "react-icons/fa";
 
 const Navbar = () => {
   const pathname = usePathname();
