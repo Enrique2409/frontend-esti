@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroui/react": "^2.8.5",
     "axios": "^1.8.4",
     "bootstrap": "^5.3.6",
     "cors": "^2.8.5",
