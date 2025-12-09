@@ -188,14 +188,13 @@ export default function PageCalificaciones() {
             setTsgList(tsgData);
 
             // Filtrar materias disponibles
-            const subjectsForGroup = [...new Set(tsgData.map(tsg => tsg.subjectId))].map(subjectId => {
-                const subject = tsgData.find(t => t.subjectId === subjectId);
+            const subjectsForGroup = [...new Set(tsgData.map(tsg => tsg.idSubject))].map(idSubject => {
+                const subject = tsgData.find(t => t.idSubject === idSubject);
                 return {
-                    idSubject: subject.subjectId,
+                    idSubject,
                     subjectName: subject.subjectName
                 };
             });
-            console.log("materias", subjectsForGroup);
             setFilteredSubjects(subjectsForGroup);
 
             // Filtrar profesores según la materia
@@ -206,10 +205,7 @@ export default function PageCalificaciones() {
                     teacherName: tsg.teacherName,
                     teacherLastName: tsg.teacherLastName
                 }));
-            setFilteredTeachers(tsgData);
-            console.log("Filtered Teachers:", tsgData);
-
-
+            setFilteredTeachers(teachersForSubject);
 
             setFormData({
                 idCardex: grade.idCardex,
@@ -257,6 +253,17 @@ export default function PageCalificaciones() {
             const tsgData = await getTSGByGroup(groupId);
             setTsgList(tsgData);
             fetchStudentsByGroup(groupId);
+
+            const subjectsForGroup = [...new Set(tsgData.map(tsg => tsg.idSubject))].map(idSubject => {
+                const subject = tsgData.find(t => t.idSubject === idSubject);
+                return {
+                    idSubject,
+                    subjectName: subject.subjectName
+                };
+            });
+
+            setFilteredSubjects(subjectsForGroup);
+            setFilteredTeachers([]);
         } else {
             setTsgList([]);
             setFilteredSubjects([]);
@@ -266,7 +273,7 @@ export default function PageCalificaciones() {
     };
 
     const handleSubjectChange = (e) => {
-        const subjectId = parseInt(e.target.value); // Asegurarse de que sea número
+        const subjectId = parseInt(e.target.value); 
         handleChange(e);
 
         if (subjectId) {
@@ -507,6 +514,7 @@ export default function PageCalificaciones() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Materia</label>
+
                             <select
                                 name="subjectId"
                                 value={formData.subjectId || ""}
@@ -516,18 +524,13 @@ export default function PageCalificaciones() {
                                 disabled={!!formData.idCardex}
                             >
                                 <option value="">Seleccione una materia</option>
-                                {[...new Set(tsgList.map(tsg => tsg.idSubject))]
-                                    .map((idSubject, index) => {
-                                        const subject = tsgList.find(t => t.idSubject === idSubject);
-                                        if (!subject) return null; // evita undefined
-                                        return (
-                                            <option key={`subject-${idSubject}-${index}`} value={idSubject}>
-                                                {subject.subjectName}
-                                            </option>
-                                        );
-                                    })}
-
+                                {filteredSubjects.map(subject => (
+                                    <option key={subject.idSubject} value={subject.idSubject}>
+                                        {subject.subjectName}
+                                    </option>
+                                ))}
                             </select>
+
                         </div>
 
                         <div>
@@ -541,17 +544,13 @@ export default function PageCalificaciones() {
                                 disabled={!!formData.idCardex}
                             >
                                 <option value="">Seleccione un profesor</option>
-                                {[...new Set(tsgList.map(tsg => tsg.idTeacher))]
-                                    .map((idTeacher, index) => {
-                                        const teacher = tsgList.find(t => t.idTeacher === idTeacher);
-                                        if (!teacher) return null; // evita undefined
-                                        return (
-                                            <option key={`teacher-${idTeacher}-${index}`} value={idTeacher}>
-                                                {teacher.teacherName} {teacher.teacherLastName}
-                                            </option>
-                                        );
-                                    })}
+                                {filteredTeachers.map(teacher => (
+                                    <option key={teacher.idTeacher} value={teacher.idTeacher}>
+                                        {teacher.teacherName} {teacher.teacherLastName}
+                                    </option>
+                                ))}
                             </select>
+
                         </div>
 
                         <div>

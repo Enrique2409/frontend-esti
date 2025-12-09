@@ -43,7 +43,7 @@ export default function Login() {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/esti/auth/login", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,24 +53,48 @@ export default function Login() {
 
       if (response.ok) {
         const data = await response.json();
-        const { token, role } = data;
+        //log temporal
+        console.log("=== RESPUESTA DEL BACKEND ===");
+        console.log("Data completa:", data);
+        console.log("ID:", data.id);
+        console.log("Username:", data.username);
+        console.log("Role:", data.role);
+        console.log("Token:", data.token);
+        console.log("============================");
+
+        const { token, role, id, username } = data;
+
         localStorage.setItem("token", token);
-        console.log("Token de autenticación para iniciar seison:", token);
+        localStorage.setItem("role", role);
+        localStorage.setItem("userId", id);
+        localStorage.setItem("username", username);
+        // ✅ VERIFICAR LO QUE SE GUARDÓ
+        console.log("=== LOCALSTORAGE DESPUÉS DE GUARDAR ===");
+        console.log("token:", localStorage.getItem("token"));
+        console.log("role:", localStorage.getItem("role"));
+        console.log("userId:", localStorage.getItem("userId"));
+        console.log("username:", localStorage.getItem("username"));
+        console.log("=======================================");
 
         if (role === "ADMIN") {
+          console.log("Redirigiendo a admin");
           router.push("/admin/inicio");
         } else if (role === "TEACHER") {
+          console.log("Redirigiendo a profesor");
           router.push("/profesor/inicio");
         } else {
+          console.log("Rol no reconocido");
           setError("Rol no reconocido.");
           setIsLoading(false);
         }
       } else {
         const errorData = await response.json();
+        console.error("Error en el backend:", errorData);
         setError(errorData.message || "Error al iniciar sesión.");
         setIsLoading(false);
       }
     } catch (error) {
+      console.error("Error en el catch", error);
       setError("Error, corrreo o contraseña incorrectos.");
       setIsLoading(false);
     } finally {
@@ -86,7 +110,7 @@ export default function Login() {
       <div className="absolute top-0 -right-4 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-75 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-75 animate-blob animation-delay-4000"></div>
       <div className="absolute inset-0 bg-pattern opacity-10"></div>
-      
+
       {/* Contenedor del login */}
       <div className="w-full max-w-md relative">
         <div className="bg-white rounded-2xl shadow-lg">
@@ -98,9 +122,7 @@ export default function Login() {
                 alt="Logo"
                 className="w-24 h-24 mx-auto mb-4 transform transition-transform hover:scale-105"
               />
-              <h1 className="text-3xl font-bold text-gray-900">
-                ¡Bienvenido!
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">¡Bienvenido!</h1>
               <p className="mt-2 text-gray-600">
                 Accede a tu cuenta para continuar
               </p>
@@ -125,8 +147,18 @@ export default function Login() {
                       onChange={(e) => setEmail(e.target.value)}
                     />
                     <div className="absolute right-3 top-3 text-gray-400">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -146,8 +178,18 @@ export default function Login() {
                       onChange={(e) => setPassword(e.target.value)}
                     />
                     <div className="absolute right-3 top-3 text-gray-400">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -182,9 +224,24 @@ export default function Login() {
                 className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
                 {isLoading ? (
-                  <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                 ) : (
                   "Iniciar Sesión"
@@ -197,7 +254,10 @@ export default function Login() {
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 rounded-b-2xl">
             <p className="text-center text-sm text-gray-600">
               ¿No tienes una cuenta?{" "}
-              <a href="#" className="font-medium text-blue-500 hover:text-blue-600">
+              <a
+                href="#"
+                className="font-medium text-blue-500 hover:text-blue-600"
+              >
                 Contacta al administrador
               </a>
             </p>
