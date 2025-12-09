@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/esti";
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const adminURL = `${baseURL}/admin`;
 
 const getAuthToken = () => localStorage.getItem("token");
@@ -92,6 +92,7 @@ export const searchAdmins = async (keyword, page = 0, size = 10, setAdmins, setP
 
 export const addAdmin = async (admin) => {
     try {
+        console.log(getAuthToken());
         const response = await axios.post(`${adminURL}/`, admin, {
             headers: {
                 "Authorization": `Bearer ${getAuthToken()}`,

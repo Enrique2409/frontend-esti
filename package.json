@@ -13,6 +13,8 @@
     "axios": "^1.8.4",
     "bootstrap": "^5.3.6",
     "cors": "^2.8.5",
+    "jspdf": "^3.0.4",
+    "jspdf-autotable": "^5.0.2",
     "next": "15.1.4",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.10",

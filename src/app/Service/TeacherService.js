@@ -1,10 +1,9 @@
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/esti";
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const teacherURL = `${baseURL}/teacher`;
 
 const getAuthToken = () => localStorage.getItem("token");
-console.log("Token de autenticación:", getAuthToken());
 
 export const login = async (credentials) => {
     try {
@@ -17,27 +16,6 @@ export const login = async (credentials) => {
         throw error;
     }
 };
-//Borrar
-/*
-export const getAllTeachersAsAdmin = async (setTeachers) => {
-    try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setTeachers([]);
-            return;
-        }
-
-        const response = await axios.get(`${teacherURL}/active`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        setTeachers(response.data);
-    } catch (error) {
-        console.error("Error al obtener profesores:", error);
-        setTeachers([]);
-    }
-};
-*/
 
 export const getTeachersPaginated = async (page = 0, size = 10, setTeachers, setPagination) => {
     try {
@@ -152,5 +130,15 @@ export const deleteTeacher = async (idTeacher) => {
         console.log("Profesor eliminado:", response.data);
     } catch (error) {
         console.error("Error al eliminar profesor:", error);
+    }
+
+};
+export const getTeacherById = async (id) => {
+    try {
+        const response = await axios.get(`${teacherURL}/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error al obtener el profesor por ID:", error);
+        throw error;
     }
 };
