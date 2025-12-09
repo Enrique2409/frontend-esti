@@ -4,7 +4,12 @@ const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const teacherSubjectURL = `${baseURL}/tsg`;
 
 // Igual que en TeacherService
-const getAuthToken = () => localStorage.getItem("token");
+const getAuthToken = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("token");
+  }
+  return null;
+};
 
 const getAuthHeaders = () => ({
   "Authorization": `Bearer ${getAuthToken()}`,

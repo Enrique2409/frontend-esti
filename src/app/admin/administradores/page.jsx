@@ -14,6 +14,7 @@ import {
   deleteAdmin,
 } from "@/app/Service/AdminService";
 
+export const dynamic = "force-dynamic";
 export default function PageAdmins() {
   const [admins, setAdmins] = useState([]);
   const [pagination, setPagination] = useState({
@@ -294,9 +295,8 @@ export default function PageAdmins() {
               onChange={handleChange}
               required
               readOnly={!!formData.idAdmin}
-              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                formData.idAdmin ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
-              }`}
+              className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${formData.idAdmin ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
+                }`}
             />
           </div>
 

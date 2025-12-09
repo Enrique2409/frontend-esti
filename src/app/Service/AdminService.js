@@ -3,8 +3,12 @@ import axios from "axios";
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const adminURL = `${baseURL}/admin`;
 
-const getAuthToken = () => localStorage.getItem("token");
-console.log("Token de autenticación:", getAuthToken());
+const getAuthToken = () => {
+    if (typeof window !== "undefined") {
+        return localStorage.getItem("token");
+    }
+    return null;
+};
 
 export const login = async (credentials) => {
     try {

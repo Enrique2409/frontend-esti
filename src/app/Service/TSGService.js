@@ -2,7 +2,12 @@ import axios from "axios";
 
 const baseURL = `${process.env.NEXT_PUBLIC_API_URL}/tsg`;
 
-const getAuthToken = () => localStorage.getItem("token");
+const getAuthToken = () => {
+    if (typeof window !== "undefined") {
+        return localStorage.getItem("token");
+    }
+    return null;
+};
 
 export const getTSGByGroup = async (groupId) => {
     try {
