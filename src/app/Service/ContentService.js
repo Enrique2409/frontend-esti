@@ -4,7 +4,12 @@ const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const baseFiles = baseURL.replace("/esti", "");
 const contentURL = `${baseURL}/content`;
 
-const getAuthToken = () => localStorage.getItem("token");
+const getAuthToken = () => {
+    if (typeof window !== "undefined") {
+        return localStorage.getItem("token");
+    }
+    return null;
+};
 
 export const getAllContent = async (setContent) => {
   try {
