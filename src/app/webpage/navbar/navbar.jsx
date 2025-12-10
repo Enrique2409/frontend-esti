@@ -13,7 +13,7 @@ function Navbar() {
   const menuItems = [
     { label: "Inicio", path: "/webpage/home", icon: "fa-house" },
     { label: "Nosotros", path: "/webpage/we", icon: "fa-school" },
-    { label: "Inscripción", path: "/webpage/inscription", icon: "fa-file-pen" },
+    { label: "Inscripción", path: "/webpage/register", icon: "fa-file-pen" },
     { label: "Noticias", path: "/webpage/news", icon: "fa-newspaper" },
     { label: "Ubicación", path: "/webpage/location", icon: "fa-location-dot" },
     { label: "Contacto", path: "/webpage/contact", icon: "fa-phone" },

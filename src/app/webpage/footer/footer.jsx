@@ -26,17 +26,17 @@ export default function Footer() {
               <h5>Información</h5>
               <ul className="list-unstyled">
                 <li>
-                  <Link href="/nosotros" className="text-decoration-none">
+                  <Link href="/webpage/we" className="text-decoration-none">
                     Nosotros
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terminos" className="text-decoration-none">
+                  <Link href="/webpage/location" className="text-decoration-none">
                     Ubicación
                   </Link>
                 </li>
                 <li>
-                  <Link href="/sucursal" className="text-decoration-none">
+                  <Link href="/webpage/news" className="text-decoration-none">
                     Noticias
                   </Link>
                 </li>
@@ -46,14 +46,14 @@ export default function Footer() {
             <div className="col-md-3">
               <h5>Correo electrónico</h5>
               <ul className="list-unstyled">
-                <li>Email: ejemplo@gmail.com</li>
+                <li>Email: esti70@gmail.com</li>
               </ul>
             </div>
 
             <div className="col-md-3">
               <h5>Teléfono</h5>
               <ul className="list-unstyled">
-                <li>Ejemplo tel.</li>
+                <li>271-167-5768</li>
               </ul>
             </div>
 
