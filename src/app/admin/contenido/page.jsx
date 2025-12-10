@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
+import { useState, useEffect } from "react";
 import Modal from "../components/Modal";
+import TableHeader from "../components/TableHeader";
+import SearchBar from "../components/SearchBar";
 import Swal from "sweetalert2";
+
 import {
   getAllContent,
   createContent,
@@ -13,6 +16,20 @@ import {
 export default function PageContent() {
   const [contents, setContents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+
+  const CATEGORY_MAP = {
+    Carrusel: "Carrusel",
+    Cartas: "Cards",
+    Noticias: "News",
+    Nosotros: "We",
+    Inscripción: "Register",
+    Contacto: "Contact",
+  };
+  const CATEGORY_LABELS = Object.keys(CATEGORY_MAP);
+
+
   const [formData, setFormData] = useState({
     id: "",
     title: "",
@@ -24,8 +41,43 @@ export default function PageContent() {
   });
 
   useEffect(() => {
-    getAllContent(setContents);
-  }, []);
+    fetchContent();
+  }, [searchTerm]);
+
+  const fetchContent = async () => {
+    await getAllContent(setContents);
+  };
+
+
+  const handleOpenModal = (content = null) => {
+    if (content) {
+      const label = Object.keys(CATEGORY_MAP).find(
+        (key) => CATEGORY_MAP[key] === content.category
+      );
+
+      setFormData({
+        id: content.id,
+        title: content.title,
+        description: content.description,
+        category: content.category,
+        categoryLabel: label || "",
+        state: content.state,
+        link: content.link,
+        image: null,
+        previewImage: content.imageURL || null,
+      });
+    } else {
+      resetForm();
+    }
+
+    setIsModalOpen(true);
+  };
+
+
+  const handleCloseModal = () => {
+    resetForm();
+    setIsModalOpen(false);
+  };
 
   const resetForm = () => {
     setFormData({
@@ -33,32 +85,40 @@ export default function PageContent() {
       title: "",
       description: "",
       category: "",
+      categoryLabel: "",
       state: true,
       link: "",
       image: null,
+      previewImage: null,
     });
   };
 
-  const openModal = (content = null) => {
-    if (content) {
-      setFormData({ ...content, image: null });
-    } else {
-      resetForm();
-    }
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    resetForm();
-    setIsModalOpen(false);
-  };
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
+    if (name === "categoryLabel") {
+      setFormData({
+        ...formData,
+        categoryLabel: value,
+        category: CATEGORY_MAP[value],
+      });
+      return;
+    }
+
+    if (files) {
+      const file = files[0];
+      setFormData({
+        ...formData,
+        image: file,
+        previewImage: URL.createObjectURL(file),
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
-      [name]: files ? files[0] : value,
+      [name]: value,
     });
   };
 
@@ -66,9 +126,16 @@ export default function PageContent() {
     e.preventDefault();
 
     const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== null) data.append(key, value);
-    });
+
+    data.append("title", formData.title);
+    data.append("description", formData.description);
+    data.append("category", formData.category);
+    data.append("state", formData.state);
+    data.append("link", formData.link);
+
+    if (formData.image) {
+      data.append("image", formData.image);
+    }
 
     try {
       if (formData.id) {
@@ -78,82 +145,160 @@ export default function PageContent() {
       }
 
       Swal.fire("Éxito", "Contenido guardado correctamente", "success");
-      closeModal();
-      getAllContent(setContents);
+      handleCloseModal();
+      fetchContent();
     } catch (error) {
+      console.error(error);
       Swal.fire("Error", "No se pudo guardar el contenido", "error");
     }
   };
+
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      <main className="min-h-screen bg-white px-6 py-10">
-        <div className="flex justify-between mb-6">
-          <h1 className="text-2xl font-bold">Gestión de Contenido</h1>
-          <button
-            onClick={() => openModal()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md"
-          >
-            Nuevo Contenido
-          </button>
-        </div>
+      <main className="ml-64 min-h-screen bg-white px-4 sm:px-6 lg:px-8 py-8">
+        <TableHeader
+          title="Gestión de Contenido"
+          onAdd={() => handleOpenModal()}
+          buttonLabel="Nuevo Contenido"
+        />
 
-        {/* TABLA */}
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="min-w-full">
-            <thead className="bg-gray-100">
-              <tr>
-                {["ID", "Título", "Categoría", "Estado", "Acciones"].map((h) => (
-                  <th key={h} className="px-4 py-2 text-left">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {contents.map((item) => (
-                <tr key={item.id} className="border-t">
-                  <td className="px-4 py-2">{item.id}</td>
-                  <td className="px-4 py-2">{item.title}</td>
-                  <td className="px-4 py-2">{item.category}</td>
-                  <td className="px-4 py-2">
-                    {item.state ? "Activo" : "Inactivo"}
-                  </td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => openModal(item)}
-                      className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded"
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+          <div className="p-6">
+          {/**  <SearchBar onSearch={setSearchTerm} />*/} 
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {["ID", "Título", "Categoría", "Estado", "Acciones"].map(
+                      (header) => (
+                        <th
+                          key={header}
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          {header}
+                        </th>
+                      )
+                    )}
+                  </tr>
+                </thead>
+
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {contents.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-gray-50 transition-colors duration-200"
                     >
-                      Editar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {item.id}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {item.title}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {Object.keys(CATEGORY_MAP).find(
+                          (key) => CATEGORY_MAP[key] === item.category
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {item.state ? "Activo" : "Inactivo"}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleOpenModal(item)}
+                            className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md text-sm font-medium"
+                          >
+                            Editar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* MODAL */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Contenido">
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title={formData.id ? "Editar Contenido" : "Nuevo Contenido"}
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input name="title" placeholder="Título" className="w-full border p-2" onChange={handleChange} />
-          <textarea name="description" placeholder="Descripción" className="w-full border p-2" onChange={handleChange} />
-          <input name="category" placeholder="Categoría" className="w-full border p-2" onChange={handleChange} />
-          <input name="link" placeholder="Enlace opcional" className="w-full border p-2" onChange={handleChange} />
+          <input
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="Título"
+            className="w-full border p-2"
+            required
+          />
+
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Descripción"
+            className="w-full border p-2"
+          />
+
+          <select
+            name="categoryLabel"
+            value={formData.categoryLabel}
+            onChange={handleChange}
+            className="w-full border p-2"
+            required
+          >
+            <option value="">Selecciona una categoría</option>
+            {CATEGORY_LABELS.map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+          </select>
+
+          {formData.previewImage && (
+            <img
+              src={formData.previewImage}
+              alt="Preview"
+              className="w-full h-40 object-contain border rounded-md mt-2"
+            />
+          )}
+
           <input type="file" name="image" onChange={handleChange} />
 
-          <select name="state" onChange={handleChange} className="w-full border p-2">
-            <option value="true">Activo</option>
-            <option value="false">Inactivo</option>
+          <select
+            name="state"
+            value={formData.state}
+            onChange={handleChange}
+            className="w-full border p-2"
+          >
+            <option value={true}>Activo</option>
+            <option value={false}>Inactivo</option>
           </select>
 
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={closeModal} className="px-4 py-2 border">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-4 py-2 border"
+            >
               Cancelar
             </button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white">
-              Guardar
+
+            <button
+              type="submit"
+              className="px-4 py-2 bg-indigo-600 text-white"
+            >
+              {formData.id ? "Actualizar" : "Crear"}
             </button>
           </div>
         </form>

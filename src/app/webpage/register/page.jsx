@@ -6,8 +6,8 @@ import Footer from "../footer/footer";
 import "../../Styles/pages.css";
 import { getActiveContentByCategory } from "@/app/Service/ContentService";
 
-export default function Contact() {
-  const categoryName = "Contact";
+export default function Register() {
+  const categoryName = "Register";
   const [services, setServices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);

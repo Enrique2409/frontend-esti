@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Navbar from "../navbar/navbar";
 import Footer from "../footer/footer";
-import "../../Styles/we.css";
-import { getServicesByCategory } from "@/app/Service/PageService";
+import "../../Styles/pages.css";
+import { getActiveContentByCategory } from "@/app/Service/ContentService";
 
 export default function News() {
-  const categoryName = "News"; 
+  const categoryName = "News";
   const [services, setServices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,10 +15,9 @@ export default function News() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const data = await getServicesByCategory(categoryName);
-        setServices(data);
+        await getActiveContentByCategory(categoryName, setServices);
       } catch {
-        setError("Error al cargar");
+        setError("Error al cargar los servicios.");
       } finally {
         setIsLoading(false);
       }
@@ -26,7 +25,6 @@ export default function News() {
 
     fetchServices();
   }, []);
-
   return (
     <section>
       <Navbar />
@@ -38,22 +36,26 @@ export default function News() {
         {error && <p className="text-danger">{error}</p>}
 
         {services.map((service, index) => (
-          <div className="row mb-5" key={service.id}>
-            
-            <div className={`col-md-6 ${index % 2 !== 0 ? "order-1 order-md-2" : ""}`}>
+          <div className={`service-row ${index % 2 !== 0 ? "reverse" : ""}`} key={service.id}>
+
+            <div className="image-col">
               <img
                 src={service.image || service.imageURL}
-                className="img-fluid rounded"
+                className="service-image"
                 alt={service.title}
               />
             </div>
 
-            <div className={`col-md-6 ${index % 2 !== 0 ? "order-2 order-md-1" : ""}`}>
+            <div className="text-col">
               <h2 className="fw-bold">{service.title}</h2>
               <p className="text-muted">{service.description}</p>
             </div>
+
           </div>
         ))}
+
+
+
       </div>
 
       <Footer />

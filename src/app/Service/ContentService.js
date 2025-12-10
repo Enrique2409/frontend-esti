@@ -1,22 +1,29 @@
 import axios from "axios";
 
-const baseURL = "http://localhost:8080/esti";
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
+const baseFiles = baseURL.replace("/esti", "");
 const contentURL = `${baseURL}/content`;
 
 const getAuthToken = () => localStorage.getItem("token");
 
-/* ✅ OBTENER TODOS */
 export const getAllContent = async (setContent) => {
   try {
     const response = await axios.get(`${contentURL}/all`);
-    setContent(response.data);
+
+    const data = response.data.map(item => ({
+      ...item,
+      imageURL: item.imageURL?.startsWith("http")
+        ? item.imageURL
+        : `${baseFiles}${item.imageURL}`
+    }));
+
+    setContent(data);
   } catch (error) {
     console.error("Error al obtener contenido:", error);
     setContent([]);
   }
 };
 
-/* ✅ OBTENER SOLO ACTIVOS */
 export const getActiveContent = async (setContent) => {
   try {
     const response = await axios.get(`${contentURL}/active`);
@@ -27,7 +34,6 @@ export const getActiveContent = async (setContent) => {
   }
 };
 
-/* ✅ OBTENER POR CATEGORÍA */
 export const getContentByCategory = async (category, setContent) => {
   try {
     const response = await axios.get(`${contentURL}/category/${category}`);
@@ -38,7 +44,6 @@ export const getContentByCategory = async (category, setContent) => {
   }
 };
 
-/* ✅ CREAR CONTENIDO (CON IMAGEN) */
 export const createContent = async (formData) => {
   try {
     const response = await axios.post(`${contentURL}/`, formData, {
@@ -55,7 +60,6 @@ export const createContent = async (formData) => {
   }
 };
 
-/* ✅ ACTUALIZAR CONTENIDO */
 export const updateContent = async (id, formData) => {
   try {
     const response = await axios.put(`${contentURL}/update/${id}`, formData, {
@@ -72,7 +76,6 @@ export const updateContent = async (id, formData) => {
   }
 };
 
-/* ✅ OBTENER POR ID */
 export const getContentById = async (id) => {
   try {
     const response = await axios.get(`${contentURL}/${id}`);
@@ -82,3 +85,27 @@ export const getContentById = async (id) => {
     throw error;
   }
 };
+
+
+export const getActiveContentByCategory = async (category, setContent) => {
+  try {
+    const response = await axios.get(
+      `${contentURL}/category/${category}/active`
+    );
+
+    const data = response.data.map((item) => ({
+      ...item,
+      imageURL: item.imageURL?.startsWith("http")
+        ? item.imageURL
+        : `${baseFiles}${item.imageURL}`,
+    }));
+
+    setContent(data);
+  } catch (error) {
+    console.error("Error al obtener contenido activo por categoría:", error);
+    setContent([]);
+  }
+};
+
+
+

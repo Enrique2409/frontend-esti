@@ -9,9 +9,9 @@ import { useRouter } from "next/navigation";
 import Carousel from "react-bootstrap/Carousel";
 import "bootstrap/dist/css/bootstrap.min.css"; 
 import "../../Styles/pagehome.css";
+import { getActiveContentByCategory
+} from "@/app/Service/ContentService";
 
-import { getCarousel, getCards, getNews
-} from "@/app/Service/PageService";
 
 export default function Home() {
 
@@ -20,21 +20,22 @@ export default function Home() {
   const [news, setNews] = useState([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setSlides(await getCarousel());
-      setCards(await getCards());
-      setNews(await getNews());
-    };
+ useEffect(() => {
+  getActiveContentByCategory("Carrusel", setSlides);
+  getActiveContentByCategory("Cards", setCards);
+  getActiveContentByCategory("News", setNews);
+}, []);
 
-    fetchData();
-  }, []);
+useEffect(() => {
+  getActiveContentByCategory("Carrusel", data => {
+    console.log("SLIDES:", data);
+    setSlides(data);
+  });
+}, []);
 
   return (
     <section>
       <Navbar />
-
-      {/* ---------- Carrusel ---------- */}
       <div className="customCarousel">
         <Carousel interval={5000} fade controls>
           {slides.map((slide) => (
@@ -68,6 +69,7 @@ export default function Home() {
 
       {/* ---------- Tarjetas ---------- */}
       <div className="container-xl mt-5">
+         <h3 className="mb-4">Talleres</h3>
         <div className="row row-cols-1 row-cols-md-3 g-4">
           {cards.map((card) => (
             <div key={card.id} className="col">
@@ -80,6 +82,30 @@ export default function Home() {
                 <div className="card-body">
                   <h5 className="card-title">{card.title}</h5>
                   <p className="card-text">{card.description}</p>
+                </div>
+                <div className="card-footer text-end">
+                  <small className="text-muted">~ ESTI 70</small>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="container-xl mt-5">
+        <h3 className="mb-4">Noticias</h3>
+        <div className="row row-cols-1 row-cols-md-3 g-4">
+          {news.map((item) => (
+            <div key={item.id} className="col">
+              <div className="card h-100 shadow-sm">
+                <img
+                  src={item.imageURL}
+                  className="card-img-top"
+                  alt={item.title}
+                />
+                <div className="card-body">
+                  <h5 className="card-title">{item.title}</h5>
+                  <p className="card-text">{item.description}</p>
                 </div>
                 <div className="card-footer text-end">
                   <small className="text-muted">~ ESTI 70</small>
