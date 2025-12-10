@@ -4,7 +4,7 @@ import Navbar from "../components/navbar";
 import { useState } from "react";
 import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
-
+import "../../Styles/print.css";
 export default function PageReportes() {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -37,7 +37,9 @@ export default function PageReportes() {
             <div className="print:hidden">
                 <Navbar />
             </div>
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">*/}
+                <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8 print:px-4 print:py-2 print:w-full print:max-w-full">
+
                 <div className="print:hidden">
                     <TableHeader 
                         title="Reportes y Boletas" 
@@ -86,7 +88,10 @@ export default function PageReportes() {
 
                     {/* Tabla de Calificaciones - Ajustada para modo horizontal */}
                     <div className="mb-4">
-                        <table className="min-w-full divide-y divide-gray-200">
+                        {/*<table className="min-w-full divide-y divide-gray-200">
+                            <table className="w-full max-w-full table-auto divide-y divide-gray-200">*/}
+<table className="w-full max-w-full table-fixed divide-y divide-gray-200 print:table-fixed">
+
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Materia</th>

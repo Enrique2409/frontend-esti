@@ -471,7 +471,7 @@ export default function PageCardex() {
     try {
       if (formData.idCardex) {
         // editar
-        await updateCardex(payload, formData.idCardex);
+        await updateCardex(formData.idCardex, payload);
       } else {
         // nuevo
         await createCardex(payload);
