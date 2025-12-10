@@ -3,7 +3,12 @@ import axios from "axios";
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const groupURL = `${baseURL}/group`;
 
-const getAuthToken = () => localStorage.getItem("token");
+const getAuthToken = () => {
+    if (typeof window !== "undefined") {
+        return localStorage.getItem("token");
+    }
+    return null;
+};
 
 export const getAllGroups = async (setGroups) => {
     try {

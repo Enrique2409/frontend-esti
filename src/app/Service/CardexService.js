@@ -5,7 +5,12 @@ import { verifyLockGrades } from "./SystemConfigService";
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const cardexURL = `${baseURL}/cardex`;
 
-const getAuthToken = () => localStorage.getItem("token");
+const getAuthToken = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("token");
+  }
+  return null;
+};
 
 const isTeacher = () => {
   const role = localStorage.getItem("role");
