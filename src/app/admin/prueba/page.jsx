@@ -7,7 +7,7 @@ import TableHeader from "../components/TableHeader";
 import SearchBar from "../components/SearchBar";
 import "../../Styles/admin.css";
 import Swal from 'sweetalert2';
-import { getAllAdmin, addAdmin, updateAdmin, deleteAdmin, login } from "@/app/Service/AdminService";
+import { getAdminsPaginated, addAdmin, updateAdmin, deleteAdmin, login } from "@/app/Service/AdminService";
 
 export default function PageAdministrators() {
     const [administrators, setAdministrators] = useState([]);
@@ -39,7 +39,7 @@ export default function PageAdministrators() {
     };
 
     const fetchAdministrators = async () => {
-        await getAllAdmin(setAdministrators);
+        await getAdminsPaginated(0, 100, setAdministrators, () => { });
     };
 
     const handleOpenModal = (administrator = null) => {
@@ -138,7 +138,7 @@ export default function PageAdministrators() {
         (admin.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
-   
+
 
     return (
         <div className="min-h-screen bg-white">

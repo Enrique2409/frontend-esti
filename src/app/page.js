@@ -68,6 +68,9 @@ export default function Login() {
         localStorage.setItem("role", role);
         localStorage.setItem("userId", id);
         localStorage.setItem("username", username);
+
+        // Seguridad: Guardar token en cookie para el Middleware
+        document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Strict; ${window.location.protocol === 'https:' ? 'Secure' : ''}`;
         // ✅ VERIFICAR LO QUE SE GUARDÓ
         console.log("=== LOCALSTORAGE DESPUÉS DE GUARDAR ===");
         console.log("token:", localStorage.getItem("token"));
