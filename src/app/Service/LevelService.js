@@ -1,27 +1,13 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const levelURL = `${baseURL}/level`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 export const getAllLevels = async (setLevels) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setLevels([]);
-            return;
-        }
-
-        const response = await axios.get(`${levelURL}/getAll`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        const response = await axios.get(`${levelURL}/getAll`);
         setLevels(response.data);
     } catch (error) {
         console.error("Error al obtener niveles:", error);
@@ -33,7 +19,6 @@ export const addLevel = async (level) => {
     try {
         const response = await axios.post(`${levelURL}/create-level`, level, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -49,7 +34,6 @@ export const updateLevel = async (level) => {
     try {
         const response = await axios.patch(`${levelURL}/${level.idLevel}`, level, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -65,7 +49,6 @@ export const deleteLevel = async (idLevel) => {
     try {
         const response = await axios.delete(`${levelURL}/${idLevel}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -81,7 +64,6 @@ export const getLevelById = async (idLevel) => {
     try {
         const response = await axios.get(`${levelURL}/${idLevel}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });

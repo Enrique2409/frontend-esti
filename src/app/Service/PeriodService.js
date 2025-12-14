@@ -1,15 +1,10 @@
 // src/services/PeriodService.js
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const periodURL = `${baseURL}/period`;
 
-const getAuthToken = () => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
-  }
-  return null;
-};
+
 
 /**
  * Obtiene periodos paginados
@@ -21,17 +16,8 @@ export const getPeriodsPaginated = async (
   setPagination
 ) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      setPeriods([]);
-      setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-      return;
-    }
-
     const response = await axios.get(`${periodURL}/`, {
       params: { page, size },
-      headers: { Authorization: `Bearer ${token}` },
     });
 
     const periods = response.data.content || [];
@@ -60,15 +46,7 @@ export const getPeriodsPaginated = async (
  */
 export const getAllPeriods = async () => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      return [];
-    }
-
-    const response = await axios.get(`${periodURL}/all`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${periodURL}/all`);
 
     return response.data || [];
   } catch (error) {
@@ -83,15 +61,7 @@ export const getAllPeriods = async () => {
  */
 export const getAllActivePeriods = async () => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      return [];
-    }
-
-    const response = await axios.get(`${periodURL}/active`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${periodURL}/active`);
 
     return response.data || [];
   } catch (error) {
@@ -107,21 +77,8 @@ export const getAllActivePeriods = async () => {
  */
 export const addPeriod = async (period) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      return null;
-    }
-
-    // Solo mandamos lo que espera el PeriodForm
-    const payload = {
-      cve: period.cve,
-      description: period.description,
-    };
-
     const response = await axios.post(`${periodURL}/create-period`, payload, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -141,22 +98,8 @@ export const addPeriod = async (period) => {
  */
 export const updatePeriod = async (period) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      return null;
-    }
-
-    const { idPeriod, cve, description } = period;
-
-    const payload = {
-      cve,
-      description,
-    };
-
     const response = await axios.patch(`${periodURL}/${idPeriod}`, payload, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -177,15 +120,8 @@ export const deletePeriod = async (idPeriod) => {
   console.log("periodId (delete lógico):", idPeriod);
 
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      return;
-    }
-
     const response = await axios.delete(`${periodURL}/${idPeriod}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -205,15 +141,8 @@ export const deletePeriodHard = async (idPeriod) => {
   console.log("periodId (delete físico):", idPeriod);
 
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      return;
-    }
-
     const response = await axios.delete(`${periodURL}/${idPeriod}/hard`, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -231,15 +160,7 @@ export const deletePeriodHard = async (idPeriod) => {
  */
 export const getPeriodById = async (idPeriod) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      return null;
-    }
-
-    const response = await axios.get(`${periodURL}/${idPeriod}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${periodURL}/${idPeriod}`);
 
     return response.data;
   } catch (error) {

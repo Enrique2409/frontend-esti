@@ -1,14 +1,9 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const subjectURL = `${baseURL}/subject`;
 
-const getAuthToken = () => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
-  }
-  return null;
-};
+
 
 export const login = async (credentials) => {
   try {
@@ -29,17 +24,8 @@ export const getSubjectsPaginated = async (
   setPagination
 ) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      setSubjects([]),
-        setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-      return;
-    }
-
     const response = await axios.get(`${subjectURL}/`, {
       params: { page, size },
-      headers: { Authorization: `Bearer ${token}` },
     });
 
     const subjects = response.data.content || [];
@@ -66,7 +52,6 @@ export const addSubject = async (subject) => {
   try {
     const response = await axios.post(`${subjectURL}/create`, subject, {
       headers: {
-        Authorization: `Bearer ${getAuthToken()}`,
         "Content-Type": "application/json",
       },
     });
@@ -85,7 +70,6 @@ export const updateSubject = async (subject) => {
       subject,
       {
         headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
           "Content-Type": "application/json",
         },
       }
@@ -102,7 +86,6 @@ export const deleteSubject = async (idSubject) => {
   try {
     const response = await axios.delete(`${subjectURL}/${idSubject}`, {
       headers: {
-        Authorization: `Bearer ${getAuthToken()}`,
         "Content-Type": "application/json",
       },
     });
@@ -120,17 +103,8 @@ export const searchSubjects = async (
   setPagination
 ) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      setSubjects([]);
-      setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-      return;
-    }
-
     const response = await axios.get(`${subjectURL}/search`, {
       params: { keyword, page, size },
-      headers: { Authorization: `Bearer ${token}` },
     });
 
     const subjects = response.data.content || [];

@@ -1,16 +1,11 @@
 // CardexService.js
-import axios from "axios";
+import axios from "../../../lib/axios";
 import { verifyLockGrades } from "./SystemConfigService";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const cardexURL = `${baseURL}/cardex`;
 
-const getAuthToken = () => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
-  }
-  return null;
-};
+
 
 const isTeacher = () => {
   const role = localStorage.getItem("role");
@@ -43,25 +38,8 @@ export const getCardexPaginated = async (
   setPagination
 ) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      setCardex?.([]);
-      setPagination?.({
-        totalPages: 0,
-        totalElements: 0,
-        currentPage: 0,
-        pageSize: size,
-        numberOfElements: 0,
-        first: true,
-        last: true,
-      });
-      return;
-    }
-
     const response = await axios.get(`${cardexURL}/`, {
       params: { page, size },
-      headers: { Authorization: `Bearer ${token}` },
     });
 
     const cardexList = response.data.content || [];
@@ -105,25 +83,8 @@ export const searchCardex = async (
   setPagination
 ) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      setCardex?.([]);
-      setPagination?.({
-        totalPages: 0,
-        totalElements: 0,
-        currentPage: 0,
-        pageSize: size,
-        numberOfElements: 0,
-        first: true,
-        last: true,
-      });
-      return;
-    }
-
     const response = await axios.get(`${cardexURL}/search`, {
       params: { keyword, page, size },
-      headers: { Authorization: `Bearer ${token}` },
     });
 
     const cardexList = response.data.content || [];
@@ -171,22 +132,6 @@ export const searchStudentsByTeacher = async (
   setPagination
 ) => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      console.log("No hay token de autenticación");
-      setCardex?.([]);
-      setPagination?.({
-        totalPages: 0,
-        totalElements: 0,
-        currentPage: 0,
-        pageSize: size,
-        numberOfElements: 0,
-        first: true,
-        last: true,
-      });
-      return;
-    }
-
     const response = await axios.get(`${cardexURL}/searchbyTeacher`, {
       params: {
         teacherId,      // obligatorio en el backend
@@ -197,7 +142,6 @@ export const searchStudentsByTeacher = async (
         page,
         size,
       },
-      headers: { Authorization: `Bearer ${token}` },
     });
 
     const cardexList = response.data.content || [];
@@ -245,13 +189,11 @@ export const searchStudentsByTeacher = async (
  */
 export const createCardex = async (cardexForm) => {
   try {
-    const token = getAuthToken();
     const response = await axios.post(
       `${cardexURL}/create-cardex`,
       cardexForm,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -271,13 +213,11 @@ export const createCardex = async (cardexForm) => {
  */
 export const updateCardex = async (cardexId, cardexForm) => {
   try {
-    const token = getAuthToken();
     const response = await axios.patch(
       `${cardexURL}/${cardexId}`,
       cardexForm,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -296,10 +236,8 @@ export const updateCardex = async (cardexId, cardexForm) => {
  */
 export const deleteCardex = async (cardexId) => {
   try {
-    const token = getAuthToken();
     const response = await axios.delete(`${cardexURL}/${cardexId}`, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -316,10 +254,8 @@ export const deleteCardex = async (cardexId) => {
  */
 export const deleteCardexHard = async (cardexId) => {
   try {
-    const token = getAuthToken();
     const response = await axios.delete(`${cardexURL}/${cardexId}/hard`, {
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
@@ -336,10 +272,7 @@ export const deleteCardexHard = async (cardexId) => {
  */
 export const getCardexById = async (cardexId) => {
   try {
-    const token = getAuthToken();
-    const response = await axios.get(`${cardexURL}/${cardexId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${cardexURL}/${cardexId}`);
     return response.data; // CardexDTO
   } catch (error) {
     console.error("Error al obtener cardex por ID:", error);
@@ -353,10 +286,7 @@ export const getCardexById = async (cardexId) => {
  */
 export const getAllCardex = async () => {
   try {
-    const token = getAuthToken();
-    const response = await axios.get(`${cardexURL}/getAll`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${cardexURL}/getAll`);
     return response.data; // List<CardexDTO>
   } catch (error) {
     console.error("Error al obtener todos los cardex:", error);
@@ -370,10 +300,7 @@ export const getAllCardex = async () => {
  */
 export const getCardexByGroup = async (groupId) => {
   try {
-    const token = getAuthToken();
-    const response = await axios.get(`${cardexURL}/by-group/${groupId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${cardexURL}/by-group/${groupId}`);
     return response.data; // List<CardexDTO>
   } catch (error) {
     console.error("Error al obtener cardex por grupo:", error);
@@ -387,10 +314,7 @@ export const getCardexByGroup = async (groupId) => {
  */
 export const getCardexByStudent = async (studentId) => {
   try {
-    const token = getAuthToken();
-    const response = await axios.get(`${cardexURL}/by-student/${studentId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${cardexURL}/by-student/${studentId}`);
     return response.data; // List<CardexDTO>
   } catch (error) {
     console.error("Error al obtener cardex por alumno:", error);
@@ -404,10 +328,7 @@ export const getCardexByStudent = async (studentId) => {
  */
 export const getCardexByTeacher = async (teacherId) => {
   try {
-    const token = getAuthToken();
-    const response = await axios.get(`${cardexURL}/by-teacher/${teacherId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${cardexURL}/by-teacher/${teacherId}`);
     return response.data; // List<CardexDTO>
   } catch (error) {
     console.error("Error al obtener cardex por maestro:", error);
@@ -421,10 +342,7 @@ export const getCardexByTeacher = async (teacherId) => {
  */
 export const getCardexBySubject = async (subjectId) => {
   try {
-    const token = getAuthToken();
-    const response = await axios.get(`${cardexURL}/by-subject/${subjectId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await axios.get(`${cardexURL}/by-subject/${subjectId}`);
     return response.data; // List<CardexDTO>
   } catch (error) {
     console.error("Error al obtener cardex por materia:", error);

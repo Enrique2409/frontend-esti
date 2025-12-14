@@ -1,14 +1,9 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const teacherURL = `${baseURL}/teacher`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 export const login = async (credentials) => {
     try {
@@ -24,17 +19,8 @@ export const login = async (credentials) => {
 
 export const getTeachersPaginated = async (page = 0, size = 10, setTeachers, setPagination) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setTeachers([]);
-            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-            return;
-        }
-
         const response = await axios.get(`${teacherURL}/`, {
-            params: { page, size },
-            headers: { "Authorization": `Bearer ${token}` }
+            params: { page, size }
         });
 
         const teacher = response.data.content || [];
@@ -60,17 +46,8 @@ export const getTeachersPaginated = async (page = 0, size = 10, setTeachers, set
 
 export const searchTeachers = async (keyword, page = 0, size = 10, setTeachers, setPagination) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setTeachers([]);
-            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-            return;
-        }
-
         const response = await axios.get(`${teacherURL}/search`, {
-            params: { keyword, page, size },
-            headers: { "Authorization": `Bearer ${token}` }
+            params: { keyword, page, size }
         });
 
         const teachers = response.data.content || [];
@@ -98,7 +75,6 @@ export const addTeacher = async (teacher) => {
     try {
         const response = await axios.post(`${teacherURL}/create`, teacher, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -112,7 +88,6 @@ export const updateTeacher = async (teacher) => {
     try {
         const response = await axios.patch(`${teacherURL}/${teacher.idTeacher}`, teacher, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -128,7 +103,6 @@ export const deleteTeacher = async (idTeacher) => {
     try {
         const response = await axios.delete(`${teacherURL}/${idTeacher}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });

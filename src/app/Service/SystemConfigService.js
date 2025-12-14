@@ -1,13 +1,8 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const systemConfigURL = `${process.env.NEXT_PUBLIC_API_URL}/admin/system`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 const isTeacher = () => {
     if (typeof window === "undefined") return false;
@@ -38,17 +33,7 @@ const isAdmin = () => {
 
 export const getSystemConfig = async () => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            throw new Error("No hay token de autenticación");
-        }
-
-        const response = await axios.get(`${systemConfigURL}/config`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        const response = await axios.get(`${systemConfigURL}/config`);
         return response.data;
     } catch (error) {
         console.error("Error al obtener configuración del sistema: ", error);
@@ -58,11 +43,6 @@ export const getSystemConfig = async () => {
 
 export const changeStatusGrades = async (lock, notes = "") => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            throw new Error("No hay token de autenticación");
-        }
         const response = await axios.post(
             `${systemConfigURL}/cardex/lock`, {
             lock: lock,
@@ -70,7 +50,6 @@ export const changeStatusGrades = async (lock, notes = "") => {
         },
             {
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
                 },
             }
@@ -107,12 +86,8 @@ export const verifyLockGrades = async () => {
             if (error.response && error.response.status === 403) {
                 console.warn("Acceso denegado a config de admin. Intentando ruta alternativa...");
                 try {
-                    const token = getAuthToken();
-                    // Intentamos /system/config (sin /admin)
                     const fallbackURL = `${process.env.NEXT_PUBLIC_API_URL}/system/config`;
-                    const response = await axios.get(fallbackURL, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
+                    const response = await axios.get(fallbackURL);
                     console.log("Configuración obtenida desde fallback:", response.data);
                     return response.data.lockedGrades;
                 } catch (fallbackError) {

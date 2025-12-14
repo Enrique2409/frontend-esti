@@ -1,15 +1,10 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const baseFiles = baseURL.replace("/esti", "");
 const contentURL = `${baseURL}/content`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 export const getAllContent = async (setContent) => {
   try {
@@ -53,7 +48,6 @@ export const createContent = async (formData) => {
   try {
     const response = await axios.post(`${contentURL}/`, formData, {
       headers: {
-        "Authorization": `Bearer ${getAuthToken()}`,
         "Content-Type": "multipart/form-data"
       }
     });
@@ -69,7 +63,6 @@ export const updateContent = async (id, formData) => {
   try {
     const response = await axios.put(`${contentURL}/update/${id}`, formData, {
       headers: {
-        "Authorization": `Bearer ${getAuthToken()}`,
         "Content-Type": "multipart/form-data"
       }
     });

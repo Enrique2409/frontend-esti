@@ -1,27 +1,13 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const groupURL = `${baseURL}/group`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 export const getAllGroups = async (setGroups) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setGroups([]);
-            return;
-        }
-
-        const response = await axios.get(`${groupURL}/active`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        const response = await axios.get(`${groupURL}/active`);
         setGroups(response.data);
     } catch (error) {
         console.error("Error al obtener grupos:", error);
@@ -33,7 +19,6 @@ export const addGroup = async (group) => {
     try {
         const response = await axios.post(`${groupURL}/create-group`, group, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -49,7 +34,6 @@ export const updateGroup = async (group) => {
     try {
         const response = await axios.patch(`${groupURL}/${group.idGroup}`, group, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -65,7 +49,6 @@ export const deleteGroup = async (idGroup) => {
     try {
         const response = await axios.delete(`${groupURL}/${idGroup}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -81,7 +64,6 @@ export const getGroupById = async (idGroup) => {
     try {
         const response = await axios.get(`${groupURL}/${idGroup}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -95,16 +77,7 @@ export const getGroupById = async (idGroup) => {
 
 export const getGroupsByLevel = async (idLevel, setGroups) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setGroups([]);
-            return;
-        }
-
-        const response = await axios.get(`${groupURL}/byLevel/${idLevel}`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
+        const response = await axios.get(`${groupURL}/byLevel/${idLevel}`);
         setGroups(response.data);
     } catch (error) {
         console.error("Error al obtener grupos por nivel:", error);

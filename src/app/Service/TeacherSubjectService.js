@@ -1,27 +1,15 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const teacherSubjectURL = `${baseURL}/tsg`;
 
-// Igual que en TeacherService
-const getAuthToken = () => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
-  }
-  return null;
-};
 
-const getAuthHeaders = () => ({
-  "Authorization": `Bearer ${getAuthToken()}`,
-  "Content-Type": "application/json",
-});
 
 // Obtener materias/grupos por profesor
 export const getSubjectsByTeacher = async (idTeacher) => {
   try {
     const response = await axios.get(
-      `${teacherSubjectURL}/by-teacher/${idTeacher}`,
-      { headers: getAuthHeaders() }
+      `${teacherSubjectURL}/by-teacher/${idTeacher}`
     );
     return response.data;
   } catch (error) {
@@ -37,7 +25,7 @@ export const createTeacherSubject = async (teacherSubjectData) => {
     const response = await axios.post(
       `${teacherSubjectURL}/create-tsg`,
       teacherSubjectData,
-      { headers: getAuthHeaders() }
+      { headers: { "Content-Type": "application/json" } }
     );
     return response.data;
   } catch (error) {
@@ -50,8 +38,7 @@ export const createTeacherSubject = async (teacherSubjectData) => {
 export const deleteTeacherSubject = async (idTeacherSubject) => {
   try {
     const response = await axios.delete(
-      `${teacherSubjectURL}/${idTeacherSubject}`,
-      { headers: getAuthHeaders() }
+      `${teacherSubjectURL}/${idTeacherSubject}`
     );
     return response.data;
   } catch (error) {

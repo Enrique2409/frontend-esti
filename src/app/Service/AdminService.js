@@ -1,14 +1,9 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const adminURL = `${baseURL}/admin`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 export const login = async (credentials) => {
     try {
@@ -24,17 +19,8 @@ export const login = async (credentials) => {
 
 export const getAdminsPaginated = async (page = 0, size = 10, setAdmins, setPagination) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setAdmins([]);
-            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-            return;
-        }
-
         const response = await axios.get(`${adminURL}/`, {
-            params: { page, size },
-            headers: { "Authorization": `Bearer ${token}` }
+            params: { page, size }
         });
 
         const admins = response.data.content || [];
@@ -60,17 +46,8 @@ export const getAdminsPaginated = async (page = 0, size = 10, setAdmins, setPagi
 
 export const searchAdmins = async (keyword, page = 0, size = 10, setAdmins, setPagination) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setAdmins([]);
-            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-            return;
-        }
-
         const response = await axios.get(`${adminURL}/search`, {
-            params: { keyword, page, size },
-            headers: { "Authorization": `Bearer ${token}` }
+            params: { keyword, page, size }
         });
 
         const admins = response.data.content || [];
@@ -96,10 +73,8 @@ export const searchAdmins = async (keyword, page = 0, size = 10, setAdmins, setP
 
 export const addAdmin = async (admin) => {
     try {
-        console.log(getAuthToken());
         const response = await axios.post(`${adminURL}/`, admin, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -113,7 +88,6 @@ export const updateAdmin = async (admin) => {
     try {
         const response = await axios.patch(`${adminURL}/${admin.idAdmin}`, admin, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -129,7 +103,6 @@ export const deleteAdmin = async (idAdmin) => {
     try {
         const response = await axios.delete(`${adminURL}/${idAdmin}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });

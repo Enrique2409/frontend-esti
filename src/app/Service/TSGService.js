@@ -1,25 +1,12 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = `${process.env.NEXT_PUBLIC_API_URL}/tsg`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 export const getTSGByGroup = async (groupId) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            return [];
-        }
-
-        const response = await axios.get(`${baseURL}/by-group/${groupId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await axios.get(`${baseURL}/by-group/${groupId}`);
         console.log("TSG data:", response.data);
 
         return response.data;

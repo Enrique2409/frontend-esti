@@ -1,14 +1,9 @@
-import axios from "axios";
+import axios from "../../../lib/axios";
 
 const baseURL = process.env.NEXT_PUBLIC_API_URL;
 const studentURL = `${baseURL}/student`;
 
-const getAuthToken = () => {
-    if (typeof window !== "undefined") {
-        return localStorage.getItem("token");
-    }
-    return null;
-};
+
 
 //Borrar
 /*
@@ -34,17 +29,8 @@ export const getAllStudents = async (setStudents) => {
 
 export const getStudentsPaginated = async (page = 0, size = 10, setStudents, setPagination) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setStudents([]);
-            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-            return;
-        }
-
         const response = await axios.get(`${studentURL}/`, {
-            params: { page, size },
-            headers: { "Authorization": `Bearer ${token}` }
+            params: { page, size }
         });
 
         const students = response.data.content || [];
@@ -70,17 +56,8 @@ export const getStudentsPaginated = async (page = 0, size = 10, setStudents, set
 
 export const searchStudents = async (keyword, page = 0, size = 10, setStudents, setPagination) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setStudents([]);
-            setPagination({ totalPages: 0, totalElements: 0, currentPage: 0 });
-            return;
-        }
-
         const response = await axios.get(`${studentURL}/search`, {
-            params: { keyword, page, size },
-            headers: { "Authorization": `Bearer ${token}` }
+            params: { keyword, page, size }
         });
 
         const students = response.data.content || [];
@@ -107,16 +84,7 @@ export const searchStudents = async (keyword, page = 0, size = 10, setStudents, 
 
 export const getStudentsByGroup = async (groupId, setStudents) => {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            console.log("No hay token de autenticación");
-            setStudents([]);
-            return;
-        }
-
-        const response = await axios.get(`${studentURL}/group/${groupId}`, {
-            headers: { "Authorization": `Bearer ${token}` },
-        });
+        const response = await axios.get(`${studentURL}/group/${groupId}`);
 
         setStudents(response.data);
     } catch (error) {
@@ -129,7 +97,6 @@ export const createStudent = async (student) => {
     try {
         const response = await axios.post(`${studentURL}/create-student`, student, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -145,7 +112,6 @@ export const updateStudent = async (student) => {
     try {
         const response = await axios.patch(`${studentURL}/${student.idStudent}`, student, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -161,7 +127,6 @@ export const deleteStudent = async (idStudent) => {
     try {
         const response = await axios.delete(`${studentURL}/${idStudent}`, {
             headers: {
-                "Authorization": `Bearer ${getAuthToken()}`,
                 "Content-Type": "application/json"
             }
         });
@@ -173,11 +138,7 @@ export const deleteStudent = async (idStudent) => {
 
 export const getStudentById = async (idStudent, setStudent) => {
     try {
-        const response = await axios.get(`${studentURL}/${idStudent}`, {
-            headers: {
-                "Authorization": `Bearer ${getAuthToken()}`
-            }
-        });
+        const response = await axios.get(`${studentURL}/${idStudent}`);
         setStudent(response.data);
     } catch (error) {
         console.error("Error al obtener estudiante por ID:", error);
