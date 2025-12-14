@@ -55,7 +55,8 @@ export function middleware(request) {
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline';
     style-src 'self' 'unsafe-inline';
-    img-src 'self' blob: data:;
+    connect-src 'self' https://api.esti70.org;
+    img-src 'self' blob: data: https://api.esti70.org;
     font-src 'self';
     object-src 'none';
     base-uri 'self';
