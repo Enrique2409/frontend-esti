@@ -53,14 +53,6 @@ export default function Login() {
 
       if (response.ok) {
         const data = await response.json();
-        //log temporal
-        console.log("=== RESPUESTA DEL BACKEND ===");
-        console.log("Data completa:", data);
-        console.log("ID:", data.id);
-        console.log("Username:", data.username);
-        console.log("Role:", data.role);
-        console.log("Token:", data.token);
-        console.log("============================");
 
         const { token, role, id, username } = data;
 
@@ -71,13 +63,7 @@ export default function Login() {
 
         // Seguridad: Guardar token en cookie para el Middleware
         document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Strict; ${window.location.protocol === 'https:' ? 'Secure' : ''}`;
-        // ✅ VERIFICAR LO QUE SE GUARDÓ
-        console.log("=== LOCALSTORAGE DESPUÉS DE GUARDAR ===");
-        console.log("token:", localStorage.getItem("token"));
-        console.log("role:", localStorage.getItem("role"));
-        console.log("userId:", localStorage.getItem("userId"));
-        console.log("username:", localStorage.getItem("username"));
-        console.log("=======================================");
+
 
         if (role === "ADMIN") {
           console.log("Redirigiendo a admin");
